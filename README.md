@@ -23,7 +23,7 @@ bloodline-backend/
 │   ├── tests/          # Code test unit, integration
 │   ├── utils/          # Các hàm tiện ích dùng chung
 │   ├── app.ts          # Cấu hình Express app, middleware, route
-│   ├── server.ts       # File entry point chạy server
+│   ├── index.ts       # File entry point chạy server
 │   └── type.d.ts       # Khai báo type mở rộng nếu cần
 ├── .env                # Biến môi trường (không commit lên git)
 ├── .gitignore          # Các file, thư mục git sẽ bỏ qua
