@@ -12,7 +12,8 @@
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1",
     "prisma": "^6.8.2",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "uuid": "^11.1.0"
   },
   "scripts": {
     "dev": "npx nodemon",
@@ -30,6 +31,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/mssql": "^9.1.7",
     "@types/node": "^22.15.29",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
     "eslint": "^8",
