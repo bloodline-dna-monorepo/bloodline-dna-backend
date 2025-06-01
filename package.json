@@ -5,11 +5,12 @@
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^6.8.2",
-    "bcryptjs": "^3.0.2",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mssql": "^11.0.1",
     "prisma": "^6.8.2",
     "reflect-metadata": "^0.2.2"
   },
@@ -23,8 +24,12 @@
     "prettier:fix": "prettier --write ."
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/bcryptjs": "^3.0.0",
     "@types/express": "^5.0.2",
-    "@types/node": "^22.15.21",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/mssql": "^9.1.7",
+    "@types/node": "^22.15.29",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
     "eslint": "^8",
