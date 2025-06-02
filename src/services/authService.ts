@@ -15,6 +15,9 @@ export const register = async (email: string, password: string, confirmpassword:
     throw new Error('Account đã tồn tại')
   }
   const passwordHash = await bcrypt.hash(password, 10)
+  const name = 'Customer'
+  const roleacc = await pool.request().input('name', name).query('SELECT * FROM Role WHERE name = @name')
+  const role = roleacc.recordset[0]
 
   const newId = uuidv4()
 
@@ -23,7 +26,7 @@ export const register = async (email: string, password: string, confirmpassword:
     .input('id', newId)
     .input('email', email)
     .input('password', passwordHash)
-    .input('role_id', '1').query(`
+    .input('role_id', role.id).query(`
       INSERT INTO Account (id, email, password, role_id)
       VALUES (@id, @email, @password, @role_id);
     `)
