@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { poolPromise, jwtSecret } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 
-const ACCESS_TOKEN_EXPIRES_IN = '15m';
+const ACCESS_TOKEN_EXPIRES_IN = '20s';
 const REFRESH_TOKEN_EXPIRES_IN = 7 * 24 * 60 * 60 * 1000;
 
 export const generateAccessToken = (payload: object): string => {

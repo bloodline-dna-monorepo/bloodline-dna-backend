@@ -6,7 +6,8 @@ import {
   loginHandler,
   requestPasswordChangeHandler,
   listPasswordChangeRequestsHandler,
-  reviewPasswordChangeRequestHandler
+  reviewPasswordChangeRequestHandler,
+  refreshAccessTokenHandler
 } from '../controllers/authController';
 import { changeUserRole } from '../controllers/adminController';
 
@@ -22,4 +23,5 @@ router.post('/password/review', authenticate, isDefaultAdmin, reviewPasswordChan
 
 router.post('/account/change-role', authenticate, isDefaultAdmin, changeUserRole);
 
+router.post('/refresh-token', refreshAccessTokenHandler);  // <--- route refresh token
 export default router;

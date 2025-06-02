@@ -1,7 +1,8 @@
-import { Response } from 'express';
+import { Response ,Request} from 'express';
 import { AuthRequest } from '../middlewares/authenticate';
 import { register, login } from '../services/authService';
 import { requestPasswordChange, listPasswordChangeRequests, reviewPasswordChangeRequest } from '../services/passwordService';
+import { verifyRefreshToken, generateAccessToken } from '../services/tokenService';
 
 export const registerHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   const { email, password, role } = req.body;
@@ -93,4 +94,23 @@ export const reviewPasswordChangeRequestHandler = async (req: AuthRequest, res: 
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
+};
+
+export const refreshAccessTokenHandler = async (req: Request, res: Response) : Promise<void>=> {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    res.status(400).json({ message: 'Missing refresh token' });
+    return 
+  }
+
+  const payload = await verifyRefreshToken(refreshToken);
+  if (!payload) {
+    res.status(401).json({ message: 'Invalid or expired refresh token' });
+    return 
+  }
+
+  const newAccessToken = generateAccessToken({ accountId: payload.accountId });
+
+  res.json({ accessToken: newAccessToken });
 };
