@@ -15,12 +15,10 @@ export const register = async (email: string, password: string, confirmpassword:
     throw new Error('Account đã tồn tại')
   }
   const passwordHash = await bcrypt.hash(password, 10)
-  const name = 'Customer'
-  const roleacc = await pool.request().input('name', name).query('SELECT * FROM Role WHERE name = @name')
+  const roleacc = await pool.request().input('name', 'Customer').query('SELECT * FROM Role WHERE name = @name')
   const role = roleacc.recordset[0]
 
   const newId = uuidv4()
-
   const insert = await pool
     .request()
     .input('id', newId)
@@ -30,8 +28,12 @@ export const register = async (email: string, password: string, confirmpassword:
       INSERT INTO Account (id, email, password, role_id)
       VALUES (@id, @email, @password, @role_id);
     `)
+  const createdAccount = await pool
+    .request()
+    .input('id', newId)
+    .query('SELECT id, email, role_id FROM Account WHERE id = @id')
 
-  return insert.recordset[0]
+  return createdAccount.recordset[0]
 }
 
 export const login = async (email: string, password: string) => {
