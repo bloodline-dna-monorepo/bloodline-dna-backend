@@ -4,8 +4,16 @@ import { generateAccessToken, generateRefreshToken } from './tokenService'
 import { v4 as uuidv4 } from 'uuid'
 
 export const register = async (email: string, password: string, confirmpassword: string) => {
+  const passwordregex = /^.{6,12}$/
+  if (!passwordregex.test(password)) {
+    throw new Error('Mật khẩu phải có độ dài từ 6 đến 12')
+  }
   if (password !== confirmpassword) {
     throw new Error('Mật khẩu không trùng khớp')
+  }
+  const emailRegex = /^[a-zA-Z0-9._%+-]{1,64}@gmail\.com$/
+  if (!emailRegex.test(email)) {
+    throw new Error('Email phải theo chuẩn ...@gmail.com')
   }
   const pool = await poolPromise
 
