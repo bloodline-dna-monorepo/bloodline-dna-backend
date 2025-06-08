@@ -1,67 +1,96 @@
 import bcrypt from 'bcrypt'
 import { poolPromise } from '../config'
 import { generateAccessToken, generateRefreshToken } from './tokenService'
-import { v4 as uuidv4 } from 'uuid'
 
 export const register = async (email: string, password: string, confirmpassword: string) => {
+  // Kiểm tra mật khẩu (độ dài 6-12 ký tự)
   const passwordregex = /^.{6,12}$/
   if (!passwordregex.test(password)) {
-    throw new Error('Mật khẩu phải có độ dài từ 6 đến 12')
+    throw new Error('Mật khẩu phải có độ dài từ 6 đến 12 ký tự')
   }
+
+  // Kiểm tra mật khẩu trùng khớp
   if (password !== confirmpassword) {
     throw new Error('Mật khẩu không trùng khớp')
   }
-  const emailRegex = /^[a-zA-Z0-9._%+-]{1,64}@gmail\.com$/
+
+  // Kiểm tra định dạng email
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
   if (!emailRegex.test(email)) {
-    throw new Error('Email phải theo chuẩn ...@gmail.com')
+    throw new Error('Email không hợp lệ')
   }
+
   const pool = await poolPromise
 
-  const Result = await pool.request().input('email', email).query('SELECT email FROM Account WHERE email = @email')
+  // Kiểm tra nếu email đã tồn tại trong bảng Accounts
+  const result = await pool.request().input('email', email).query(`
+    SELECT Email FROM Accounts WHERE Email = @Email
+  `)
 
-  if (Result.recordset.length > 0) {
-    throw new Error('Account đã tồn tại')
+  if (result.recordset.length > 0) {
+    throw new Error('Email đã tồn tại')
   }
-  const passwordHash = await bcrypt.hash(password, 10)
-  const roleacc = await pool.request().input('name', 'Customer').query('SELECT * FROM Role WHERE name = @name')
-  const role = roleacc.recordset[0]
 
-  const newId = uuidv4()
-  const insert = await pool
+  // Lấy role "Customer" từ bảng Roles
+  const roleAcc = await pool.request().input('name', 'Customer').query(`
+    SELECT * FROM Roles WHERE RoleName = @name
+  `)
+
+  if (roleAcc.recordset.length === 0) {
+    throw new Error('Role không tồn tại')
+  }
+
+  const role = roleAcc.recordset[0]
+
+  // Mã hóa mật khẩu
+  const passwordHash = await bcrypt.hash(password, 10)
+
+  // Lưu tài khoản vào cơ sở dữ liệu
+  const i = await pool
     .request()
-    .input('id', newId)
     .input('email', email)
-    .input('password', passwordHash)
-    .input('role_id', role.id).query(`
-      INSERT INTO Account (id, email, password, role_id)
-      VALUES (@id, @email, @password, @role_id);
+    .input('password', passwordHash) // Lưu mật khẩu đã mã hóa
+    .input('role_id', role.RoleID) // Dùng RoleID thay vì role_name
+    .query(`
+      INSERT INTO Accounts (Email, PasswordHash, RoleID)
+      VALUES (@email, @password, @role_id)
     `)
-  const createdAccount = await pool
-    .request()
-    .input('id', newId)
-    .query('SELECT id, email, role_id FROM Account WHERE id = @id')
+
+  // Lấy thông tin account vừa tạo
+  const createdAccount = await pool.request().input('email', email).query(`
+      SELECT * FROM Accounts WHERE Email = @email`)
 
   return createdAccount.recordset[0]
 }
 
 export const login = async (email: string, password: string) => {
   const pool = await poolPromise
-  const result = await pool
-    .request()
-    .input('email', email)
-    .query(
-      'SELECT a.id, a.email, a.password, r.name AS role_name FROM Account a JOIN Role r ON a.role_id = r.id WHERE a.email = @email'
-    )
+
+  // Lấy thông tin tài khoản và role
+  const result = await pool.request().input('email', email).query(`
+      SELECT a.AccountID, a.Email, a.PasswordHash, r.RoleName AS role_name 
+      FROM Accounts a
+      JOIN Roles r ON a.RoleID = r.RoleID
+      WHERE a.Email = @email
+    `)
 
   if (result.recordset.length === 0) return null
 
   const user = result.recordset[0]
-  const valid = await bcrypt.compare(password, user.password)
+
+  // Kiểm tra mật khẩu
+  const valid = await bcrypt.compare(password, user.PasswordHash)
   if (!valid) return null
 
-  const payload = { userId: user.id, email: user.email, role: user.role_name }
+  // Tạo JWT tokens
+  const payload = {
+    accountId: user.AccountID,
+    email: user.Email,
+    role: user.role_name
+  }
+
   const accessToken = generateAccessToken(payload)
-  const refreshToken = await generateRefreshToken(user.id)
+  const refreshToken = await generateRefreshToken(user.AccountID)
 
   return { accessToken, refreshToken }
 }

@@ -3,25 +3,30 @@ import { AuthRequest } from '../middlewares/authenticate'
 import { register, login } from '../services/authService'
 import { PasswordChange } from '../services/passwordService'
 import { verifyRefreshToken, generateAccessToken } from '../services/tokenService'
-import { json } from 'stream/consumers'
+import { error } from 'console'
 
 export const registerHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   const { email, password, confirmpassword } = req.body
 
+  // Kiểm tra các tham số đầu vào
   if (!email || !password || !confirmpassword) {
-    res.status(400).json({ message: 'Missing email or password' })
+    res.status(400).json({ message: 'Thiếu email hoặc mật khẩu' })
     return
   }
 
   try {
     const user = await register(email, password, confirmpassword)
     if (!user) {
-      res.status(409).json({ message: 'Email already exists' })
+      res.status(409).json({ message: 'Email đã tồn tại' })
       return
     }
-    res.status(201).json({ message: 'User registered', user })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
+    res.status(201).json({ message: 'Đăng ký thành công', user })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message })
+    } else {
+      res.status(500).json({ message: 'Đã xảy ra lỗi không xác định' })
+    }
   }
 }
 
@@ -29,54 +34,86 @@ export const loginHandler = async (req: AuthRequest, res: Response): Promise<voi
   const { email, password } = req.body
 
   if (!email || !password) {
-    res.status(400).json({ message: 'Missing email or password' })
+    res.status(400).json({ message: 'Thiếu email hoặc mật khẩu' })
     return
   }
 
-  const tokens = await login(email, password)
-  if (!tokens) {
-    res.status(401).json({ message: 'Invalid credentials' })
-    return
-  }
+  try {
+    const tokens = await login(email, password)
+    if (!tokens) {
+      res.status(401).json({ message: 'Thông tin đăng nhập không hợp lệ' })
+      return
+    }
 
-  res.json(tokens)
+    res.json(tokens)
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message })
+    } else {
+      res.status(500).json({ message: 'Đã xảy ra lỗi không xác định' })
+    }
+  }
 }
 
 export const PasswordChangeHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   const user = req.user
   if (!user) {
-    res.status(401).json({ message: 'Unauthorized' })
+    res.status(401).json({ message: 'Không có quyền truy cập' })
     return
   }
+
   const { password, newPassword } = req.body
 
+  // Kiểm tra mật khẩu cũ và mật khẩu mới
   if (!password) {
-    res.status(400).json({ message: 'Old password is required' })
+    res.status(400).json({ message: 'Mật khẩu cũ là bắt buộc' })
+    return
   }
   if (!newPassword) {
-    res.status(400).json({ message: 'New password is required' })
+    res.status(400).json({ message: 'Mật khẩu mới là bắt buộc' })
     return
   }
 
-  await PasswordChange(user.userId, password, newPassword)
-  res.json({ message: 'Password change request submitted for admin approval' })
+  try {
+    await PasswordChange(user.userId, password, newPassword)
+    res.json({ message: 'Yêu cầu thay đổi mật khẩu đã được gửi để phê duyệt' })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message })
+    } else {
+      res.status(500).json({ message: 'Đã xảy ra lỗi không xác định' })
+    }
+  }
 }
 
 export const refreshAccessTokenHandler = async (req: Request, res: Response): Promise<void> => {
   const { refreshToken } = req.body
 
   if (!refreshToken) {
-    res.status(400).json({ message: 'Missing refresh token' })
+    res.status(400).json({ message: 'Thiếu refresh token' })
     return
   }
 
-  const payload = await verifyRefreshToken(refreshToken)
-  if (!payload) {
-    res.status(401).json({ message: 'Invalid or expired refresh token' })
-    return
+  try {
+    const payload = await verifyRefreshToken(refreshToken)
+    if (!payload) {
+      res.status(401).json({ message: 'Refresh token không hợp lệ hoặc đã hết hạn' })
+      return
+    }
+
+    // Đảm bảo bạn truyền đầy đủ thông tin trong payload
+    const newAccessToken = generateAccessToken({
+      accountId: payload.accountId,
+      email: payload.email,
+      role: payload.role
+    })
+
+    res.json({ accessToken: newAccessToken })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message })
+    } else {
+      res.status(500).json({ message: 'Đã xảy ra lỗi không xác định' })
+    }
   }
-
-  const newAccessToken = generateAccessToken({ accountId: payload.accountId })
-
-  res.json({ accessToken: newAccessToken })
 }

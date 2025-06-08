@@ -4,8 +4,9 @@ import { poolPromise } from '../config'
 export const changeUserRole = async (req: Request, res: Response): Promise<void> => {
   const { email, newRole } = req.body
 
+  // Kiểm tra các tham số đầu vào
   if (!email || !newRole) {
-    res.status(400).json({ message: 'Missing accountId or newRole' })
+    res.status(400).json({ message: 'Missing email or newRole' })
     return
   }
 
@@ -16,20 +17,30 @@ export const changeUserRole = async (req: Request, res: Response): Promise<void>
   }
 
   if (newRole === 'admin') {
-    res.status(403).json({ message: 'Không thể phân quyền admin mặc định' })
+    res.status(403).json({ message: 'Cannot assign default admin role' })
     return
   }
 
   try {
     const pool = await poolPromise
 
-    await pool.request().input('email', email).input('roleName', newRole).query(`
-        UPDATE Account SET role_id = (SELECT id FROM Role WHERE name = @roleName)
-        WHERE email = @email
-      `)
+    // Cập nhật quyền người dùng
+    await pool
+      .request()
+      .input('email', email)
+      .input('roleName', newRole)
+      .query(
+        `UPDATE Accounts
+     SET RoleID = (SELECT RoleID FROM Roles WHERE RoleName = @roleName)
+     WHERE Email = @email`
+      )
 
     res.json({ message: 'Role updated successfully' })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message })
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' })
+    }
   }
 }

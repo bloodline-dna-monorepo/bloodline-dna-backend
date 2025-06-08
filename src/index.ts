@@ -1,15 +1,20 @@
-import app from './app';
-import { port } from './config';
-import { initDefaultAdmin } from './utils/initAdmin';
+import app from './app'
+import { port } from './config'
+import { initDefaultAdmin } from './utils/initAdmin'
 
 async function start() {
-  await initDefaultAdmin();
+  try {
+    // Đảm bảo admin mặc định được khởi tạo
+    await initDefaultAdmin()
 
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+    // Khởi động server trên cổng đã chỉ định
+    app.listen(port, () => {
+      console.log(`Server is running on http://localhost:${port}`)
+    })
+  } catch (err) {
+    console.error('Failed to initialize admin or start the server', err)
+    process.exit(1) // Thoát chương trình nếu có lỗi trong quá trình khởi tạo hoặc chạy server
+  }
 }
 
-start().catch(err => {
-  console.error('Failed to start server', err);
-});
+start()
