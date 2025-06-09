@@ -75,7 +75,7 @@ export const PasswordChangeHandler = async (req: AuthRequest, res: Response): Pr
   }
 
   try {
-    await PasswordChange(user.userId, password, newPassword)
+    await PasswordChange(user.accountId, password, newPassword)
     res.json({ message: 'Yêu cầu thay đổi mật khẩu đã được gửi để phê duyệt' })
   } catch (error: unknown) {
     if (error instanceof Error) {

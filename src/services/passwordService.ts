@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
 import { poolPromise } from '../config'
 
-export const PasswordChange = async (userId: string, password: string, newPassword: string) => {
+export const PasswordChange = async (userId: number, password: string, newPassword: string) => {
   const pool = await poolPromise
 
   // Kiểm tra nếu người dùng tồn tại

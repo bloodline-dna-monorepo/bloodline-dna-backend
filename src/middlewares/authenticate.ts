@@ -5,7 +5,7 @@ import { jwtSecret } from '../config'
 export type Role = 'admin' | 'manager' | 'staff' | 'customer'
 
 export interface AuthUser {
-  userId: string
+  accountId: number
   email: string
   role: Role
 }

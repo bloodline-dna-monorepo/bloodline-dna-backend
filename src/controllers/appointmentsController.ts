@@ -1,21 +1,33 @@
 import { Request, Response } from 'express'
 import { poolPromise } from '../config/index'
+import { AuthRequest } from '../middlewares/authenticate'
 
-export const createAppointment = async (req: Request, res: Response) => {
-  const { customerId, serviceId, scheduleDate, locationType, address, numTestSubjects } = req.body
+export const createAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  const user = req.user
+  console.log('✅ User from token:', user)
+
+  if (!user) {
+    res.status(401).json({ message: 'Không có quyền truy cập' })
+    return
+  }
+  const { serviceId, scheduleDate, testType, address } = req.body
 
   try {
     const pool = await poolPromise
+    const test = await pool.request().input('Name', testType).query(`SELECT * from TestType WHERE testName = @Name`)
+    if (test.recordset.length === 0) {
+      throw new Error('Testtype ko hop ly')
+    }
+    const type = test.recordset[0]
     const result = await pool
       .request()
-      .input('customerId', customerId)
+      .input('customerId', req.user?.accountId)
       .input('serviceId', serviceId)
       .input('scheduleDate', scheduleDate)
-      .input('locationType', locationType)
-      .input('address', address)
-      .input('numTestSubjects', numTestSubjects).query(`
-        INSERT INTO Appointments (CustomerID, ServiceID, ScheduleDate, LocationType, Address, NumTestSubjects)
-        VALUES (@customerId, @serviceId, @scheduleDate, @locationType, @address, @numTestSubjects)
+      .input('testTypeID', type.id)
+      .input('address', address).query(`
+        INSERT INTO TestRequest (CustomerID, ServiceID, ScheduleDate, testTypeID, Address)
+        VALUES (@customerId, @serviceId, @scheduleDate, @testTypeID, @address)
         SELECT SCOPE_IDENTITY() AS AppointmentID
       `)
 

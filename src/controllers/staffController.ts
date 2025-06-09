@@ -6,15 +6,12 @@ export const getAppointmentsForStaff = async (req: Request, res: Response): Prom
   try {
     const pool = await poolPromise
     const result = await pool.request().query(`
-      SELECT a.AppointmentID, s.ServiceName, a.ScheduleDate, a.Status
-      FROM Appointments a
-      JOIN Services s ON a.ServiceID = s.ServiceID
-      WHERE a.Status = 'Pending'
+      SELECT * FROM TestRequest
     `)
 
     // Kiểm tra xem có lịch hẹn nào không
     if (result.recordset.length === 0) {
-      res.status(404).json({ message: 'No pending appointments found' })
+      res.status(404).json({ message: 'No TestRequest found' })
       return
     }
 
