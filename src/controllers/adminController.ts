@@ -10,13 +10,13 @@ export const changeUserRole = async (req: Request, res: Response): Promise<void>
     return
   }
 
-  const validRoles = ['admin', 'manager', 'staff', 'customer']
+  const validRoles = ['Admin', 'Manager', 'Staff', 'Customer']
   if (!validRoles.includes(newRole)) {
     res.status(400).json({ message: 'Invalid role' })
     return
   }
 
-  if (newRole === 'admin') {
+  if (newRole === 'Admin') {
     res.status(403).json({ message: 'Cannot assign default admin role' })
     return
   }

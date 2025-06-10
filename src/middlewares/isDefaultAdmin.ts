@@ -10,7 +10,7 @@ export const isDefaultAdmin = (req: AuthRequest, res: Response, next: NextFuncti
   }
 
   // Kiểm tra nếu người dùng không phải là admin mặc định
-  if (req.user.role !== 'admin' || req.user.email !== DEFAULT_ADMIN_EMAIL) {
+  if (req.user.role !== 'Admin' || req.user.email !== DEFAULT_ADMIN_EMAIL) {
     res.status(403).json({
       message: 'Forbidden - Only the default admin can perform this action'
     })

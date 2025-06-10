@@ -6,6 +6,6 @@ import { authorize } from '~/middlewares/authorize'
 const router = express.Router()
 
 // Customer tải xuống PDF mẫu đơn và kết quả
-router.get('/sample-form/pdf/:appointmentId', authenticate, authorize(['customer']), generateSampleFormPDF)
+router.get('/sample-form/pdf/:appointmentId', authenticate, authorize(['Customer']), generateSampleFormPDF)
 
 export default router

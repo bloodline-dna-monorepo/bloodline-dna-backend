@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { poolPromise } from '../config/index'
+import { AuthRequest } from '~/type'
 
 // Staff xem danh sách các lịch hẹn
 export const getAppointmentsForStaff = async (req: Request, res: Response): Promise<void> => {
@@ -89,3 +90,6 @@ export const enterTestResult = async (req: Request, res: Response): Promise<void
     }
   }
 }
+// export const createtestprocess = async (req:AuthRequest,res:Response): Promise<void> =>{
+//   const {}
+// }

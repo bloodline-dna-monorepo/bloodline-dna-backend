@@ -6,12 +6,12 @@ import { authorize } from '~/middlewares/authorize'
 const router = express.Router()
 
 // Customer tạo lịch hẹn
-router.post('/', authenticate, authenticate, authorize(['customer']), createAppointment) // Chỉ cần gọi trực tiếp controller
+router.post('/', authenticate, authenticate, authorize(['Customer']), createAppointment) // Chỉ cần gọi trực tiếp controller
 
 // Lấy giá dịch vụ
-router.get('/price/:serviceId', authenticate, authorize(['customer']), getAppointmentPrice) // Chỉ cần gọi trực tiếp controller
+router.get('/price/:serviceId', authenticate, authorize(['Customer']), getAppointmentPrice) // Chỉ cần gọi trực tiếp controller
 
 // Customer thanh toán
-router.post('/payment', authenticate, authorize(['customer']), processPayment) // Chỉ cần gọi trực tiếp controller
+router.post('/payment', authenticate, authorize(['Customer']), processPayment) // Chỉ cần gọi trực tiếp controller
 
 export default router
