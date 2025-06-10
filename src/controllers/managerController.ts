@@ -32,7 +32,7 @@ export const verifyTestResult = async (req: Request, res: Response): Promise<voi
     if (error instanceof Error) {
       res.status(500).json({ message: error.message })
     } else {
-      res.status(500).json({ message: 'Đã xảy ra lỗi không xác định' })
+      res.status(500).json({ message: 'Đã xảy ra lỗi kh��ng xác định' })
     }
   }
 }
