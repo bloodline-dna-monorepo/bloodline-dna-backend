@@ -1,17 +1,25 @@
 import express from 'express'
-import { createAppointment, getAppointmentPrice, processPayment } from '../controllers/appointmentsController'
+import {
+  createAppointment,
+  getAppointmentPrice,
+  processPayment,
+  getAllServices
+} from '../controllers/appointmentsController'
 import { authenticate } from '../middlewares/authenticate'
-import { authorize } from '~/middlewares/authorize'
+import { authorize } from '../middlewares/authorize'
 
 const router = express.Router()
 
 // Customer tạo lịch hẹn
-router.post('/', authenticate, authenticate, authorize(['Customer']), createAppointment) // Chỉ cần gọi trực tiếp controller
+router.post('/', authenticate, authorize(['Customer']), createAppointment)
 
 // Lấy giá dịch vụ
-router.get('/price/:serviceId', authenticate, authorize(['Customer']), getAppointmentPrice) // Chỉ cần gọi trực tiếp controller
+router.get('/price/:serviceId', getAppointmentPrice)
 
 // Customer thanh toán
-router.post('/payment', authenticate, authorize(['Customer']), processPayment) // Chỉ cần gọi trực tiếp controller
+router.post('/payment', authenticate, authorize(['Customer']), processPayment)
+
+// Get all services
+router.get('/services', getAllServices)
 
 export default router

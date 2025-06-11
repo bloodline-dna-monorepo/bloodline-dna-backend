@@ -5,7 +5,9 @@ import {
   registerHandler,
   loginHandler,
   PasswordChangeHandler,
-  refreshAccessTokenHandler
+  refreshAccessTokenHandler,
+  getCurrentUserInfo,
+  logoutHandler
 } from '../controllers/authController'
 import { changeUserRole } from '../controllers/adminController'
 
@@ -25,5 +27,11 @@ router.post('/account/change-role', authenticate, isDefaultAdmin, changeUserRole
 
 // Làm mới token (Refresh token)
 router.post('/refresh-token', refreshAccessTokenHandler)
+
+// Get current user info
+router.get('/me', authenticate, getCurrentUserInfo)
+
+// Logout
+router.post('/logout', logoutHandler)
 
 export default router

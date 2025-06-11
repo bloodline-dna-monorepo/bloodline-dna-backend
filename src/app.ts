@@ -1,37 +1,52 @@
-import express, { type Request, type Response, type NextFunction } from "express"
-import appointmentsRoutes from "./routes/appointments"
-import staffRoutes from "./routes/staff"
-import managerRoutes from "./routes/manager"
-import customerRoutes from "./routes/customer"
+import express from "express"
+import cors from "cors"
+import  corsOptions  from "./config/cors"
+import { errorHandler } from "./middlewares/errorHandler"
+
+// Import routes
 import authRoutes from "./routes/auth"
-import cors from "cors" // Để xử lý CORS
-import helmet from "helmet" // Middleware bảo mật
-import corsOptions from "./config/cors"
+import appointmentsRoutes from "./routes/appointments"
+import customerRoutes from "./routes/customer"
+import managerRoutes from "./routes/manager"
+import staffRoutes from "./routes/staff"
+import paymentRoutes from "./routes/payment"
+import staffDashboardRoutes from "./routes/staffDashboard"
+import helmet from "helmet"
+import morgan from "morgan"
+import logger from "./utils/logger"
 
 const app = express()
+// Logging middleware
+app.use(
+  morgan("dev", {
+    stream: {
+      write: (message) => logger.http(message.trim()),
+    },
+  }),
+)
 
-// Middleware bảo mật và CORS
-app.use(helmet()) // Thêm bảo mật cho HTTP headers
-app.use(cors(corsOptions)) // Giúp cho ứng dụng có thể giao tiếp với các domain khác
-
-app.use(express.json()) // Middleware xử lý JSON body
+// Security middleware
+app.use(helmet())
+// Middleware
+app.use(cors(corsOptions))
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
 // Routes
-app.use("/auth", authRoutes)
-app.use("/appointments", appointmentsRoutes)
-app.use("/staff", staffRoutes)
-app.use("/manager", managerRoutes)
-app.use("/customer", customerRoutes)
+app.use("/api/auth", authRoutes)
+app.use("/api/appointments", appointmentsRoutes)
+app.use("/api/customer", customerRoutes)
+app.use("/api/manager", managerRoutes)
+app.use("/api/staff", staffRoutes)
+app.use("/api/payment", paymentRoutes)
+app.use("/api/staff-dashboard", staffDashboardRoutes)
 
-// Middleware xử lý lỗi 404 (Không tìm thấy route)
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.status(404).json({ message: "Not Found" })
+// Health check
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "Server is running" })
 })
 
-// Middleware xử lý lỗi toàn cục
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err) // Log lỗi
-  res.status(500).json({ message: "Internal Server Error" })
-})
+// Error handling middleware
+app.use(errorHandler)
 
 export default app

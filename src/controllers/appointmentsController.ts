@@ -1,6 +1,6 @@
-import { Request, Response } from 'express'
+import type { Request, Response } from 'express'
 import { poolPromise } from '../config/index'
-import { AuthRequest } from '../middlewares/authenticate'
+import type { AuthRequest } from '../middlewares/authenticate'
 
 export const createAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
   const user = req.user
@@ -10,7 +10,7 @@ export const createAppointment = async (req: AuthRequest, res: Response): Promis
     res.status(401).json({ message: 'Không có quyền truy cập' })
     return
   }
-  const { serviceId, scheduleDate, testType, address } = req.body
+  const { serviceId, scheduleDate, testType, address, sampleCategories } = req.body
 
   try {
     const pool = await poolPromise
@@ -19,20 +19,53 @@ export const createAppointment = async (req: AuthRequest, res: Response): Promis
       throw new Error('Testtype ko hop ly')
     }
     const type = test.recordset[0]
-    const result = await pool
-      .request()
-      .input('customerId', req.user?.accountId)
-      .input('serviceId', serviceId)
-      .input('scheduleDate', scheduleDate)
-      .input('testTypeID', type.id)
-      .input('address', address).query(`
-        INSERT INTO TestRequest (CustomerID, ServiceID, ScheduleDate, testTypeID, Address)
-        VALUES (@customerId, @serviceId, @scheduleDate, @testTypeID, @address)
-        SELECT SCOPE_IDENTITY() AS AppointmentID
-      `)
 
-    const appointmentId = result.recordset[0].AppointmentID
-    res.status(201).json({ message: 'Appointment created successfully', appointmentId })
+    // Start a transaction
+    const transaction = pool.transaction()
+    await transaction.begin()
+
+    try {
+      // Insert test request
+      const result = await transaction
+        .request()
+        .input('customerId', req.user?.accountId)
+        .input('serviceId', serviceId)
+        .input('scheduleDate', scheduleDate)
+        .input('testTypeID', type.id)
+        .input('address', address).query(`
+          INSERT INTO TestRequest (CustomerID, ServiceID, ScheduleDate, testTypeID, Address)
+          VALUES (@customerId, @serviceId, @scheduleDate, @testTypeID, @address)
+          SELECT SCOPE_IDENTITY() AS AppointmentID
+        `)
+
+      const appointmentId = result.recordset[0].AppointmentID
+
+      // Insert sample categories if provided
+      if (sampleCategories && Array.isArray(sampleCategories)) {
+        for (const sample of sampleCategories) {
+          await transaction
+            .request()
+            .input('testRequestId', appointmentId)
+            .input('sampleType', sample.sampleType)
+            .input('ownerName', sample.ownerName)
+            .input('gender', sample.gender)
+            .input('relationship', sample.relationship)
+            .input('yob', sample.yob).query(`
+              INSERT INTO SampleCategories (TestRequestID, sampleType, ownerName, gender, relationship, yob)
+              VALUES (@testRequestId, @sampleType, @ownerName, @gender, @relationship, @yob)
+            `)
+        }
+      }
+
+      // Commit the transaction
+      await transaction.commit()
+
+      res.status(201).json({ message: 'Appointment created successfully', appointmentId })
+    } catch (error) {
+      // Rollback the transaction on error
+      await transaction.rollback()
+      throw error
+    }
   } catch (error: unknown) {
     // Đổi kiểu error thành 'unknown'
     if (error instanceof Error) {
@@ -77,11 +110,32 @@ export const processPayment = async (req: Request, res: Response) => {
       .input('amount', amount)
       .input('paymentMethod', paymentMethod)
       .input('paidAt', paidAt).query(`
-        INSERT INTO Payments (AppointmentID, Amount, PaymentMethod, PaidAt)
+        INSERT INTO Payments (TestRequestID, Amount, PaymentMethod, PaidAt)
         VALUES (@appointmentId, @amount, @paymentMethod, @paidAt)
       `)
 
     res.json({ message: 'Payment successful' })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message })
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' })
+    }
+  }
+}
+
+// Add endpoint to get all services
+export const getAllServices = async (req: Request, res: Response) => {
+  try {
+    const pool = await poolPromise
+    const result = await pool.request().query(`
+      SELECT s.ServiceID, s.ServiceName, s.Description, s.Category, 
+             p.Price2Samples, p.Price3Samples, p.TimeToResult
+      FROM Services s
+      JOIN PriceDetails p ON s.ServiceID = p.ServiceID
+    `)
+
+    res.json(result.recordset)
   } catch (error: unknown) {
     if (error instanceof Error) {
       res.status(500).json({ message: error.message })

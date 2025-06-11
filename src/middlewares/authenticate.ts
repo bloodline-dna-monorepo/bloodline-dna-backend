@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
-import { jwtSecret } from '../config'
+import type { Request, Response, NextFunction } from "express"
+import jwt from "jsonwebtoken"
+import { jwtSecret } from "../config"
 
-export type Role = 'Admin' | 'Manager' | 'Staff' | 'Customer'
+export type Role = "Admin" | "Manager" | "Staff" | "Customer"
 
 export interface AuthUser {
   accountId: number
@@ -10,22 +10,31 @@ export interface AuthUser {
   role: Role
 }
 
+// Extend Request interface để thêm user property
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthUser
+    }
+  }
+}
+
 export interface AuthRequest extends Request {
   user?: AuthUser
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers['authorization']
+export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+  const authHeader = req.headers["authorization"]
 
   if (!authHeader) {
-    res.status(401).json({ message: 'Authorization header is missing' })
+    res.status(401).json({ message: "Authorization header is missing" })
     return
   }
 
   // Kiểm tra token có phải là dạng "Bearer <token>"
-  const token = authHeader.split(' ')[1]
+  const token = authHeader.split(" ")[1]
   if (!token) {
-    res.status(401).json({ message: 'Token is missing in the Authorization header' })
+    res.status(401).json({ message: "Token is missing in the Authorization header" })
     return
   }
 
@@ -35,6 +44,6 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     req.user = payload
     next() // Chuyển tiếp đến middleware tiếp theo
   } catch (error) {
-    res.status(401).json({ message: 'Invalid or expired token' })
+    res.status(401).json({ message: "Invalid or expired token" })
   }
 }

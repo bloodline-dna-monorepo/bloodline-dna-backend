@@ -35,3 +35,15 @@ export const poolPromise = new sql.ConnectionPool(dbConfig)
     console.error('DB Connection failed:', err)
     process.exit(1)
   })
+
+// Default export cho config
+const config = {
+  port,
+  jwtSecret,
+  DEFAULT_ADMIN_EMAIL,
+  DEFAULT_ADMIN_PASSWORD,
+  dbConfig,
+  poolPromise
+}
+
+export default config
