@@ -28,8 +28,8 @@ export class PaymentController {
     try {
       const { amount, orderInfo, appointmentId }: VNPayRequest = req.body
 
-      const vnp_TmnCode = process.env.VNP_TMN_CODE || 'DEMO'
-      const vnp_HashSecret = process.env.VNP_HASH_SECRET || 'DEMO_SECRET'
+      const vnp_TmnCode = process.env.VNP_TMN_CODE || 'VNP_TMN_CODE'
+      const vnp_HashSecret = process.env.VNP_HASH_SECRET || 'VNP_HASH_SECRET'
       const vnp_Url = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
       const vnp_ReturnUrl = process.env.VNP_RETURN_URL || 'http://localhost:3000/payment/callback'
 

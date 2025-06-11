@@ -7,8 +7,8 @@ export class PaymentService {
   static async createVNPayPayment(paymentData: PaymentData): Promise<PaymentResult> {
     try {
       const vnpUrl = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
-      const vnpTmnCode = process.env.VNP_TMN_CODE || 'your_tmn_code'
-      const vnpHashSecret = process.env.VNP_HASH_SECRET || 'your_hash_secret'
+      const vnpTmnCode = process.env.VNP_TMN_CODE || 'VNP_TMN_CODE'
+      const vnpHashSecret = process.env.VNP_HASH_SECRET || 'VNP_HASH_SECRET'
 
       const transactionId = `TXN${Date.now()}`
       const createDate = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
