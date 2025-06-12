@@ -1,5 +1,10 @@
 import express from 'express'
-import { getAppointmentsForStaff, updateSampleStatus, enterTestResult } from '../controllers/staffController'
+import {
+  getAppointmentsForStaff,
+  updateSampleStatus,
+  enterTestResult,
+  createTestConfirm
+} from '../controllers/staffController'
 import { authenticate } from '~/middlewares/authenticate'
 import { authorize } from '~/middlewares/authorize'
 
@@ -8,6 +13,7 @@ const router = express.Router()
 // Staff xem danh sách các lịch hẹn
 router.get('/appointments', authenticate, authorize(['Staff', 'Manager', 'Admin']), getAppointmentsForStaff)
 
+router.post('/create-testprocess/:TestRequestId', authenticate, authorize(['Staff']), createTestConfirm)
 // Staff cập nhật trạng thái mẫu
 router.put('/kits/sample-status', authenticate, authorize(['Staff']), updateSampleStatus)
 

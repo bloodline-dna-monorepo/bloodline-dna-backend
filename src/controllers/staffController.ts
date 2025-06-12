@@ -1,13 +1,13 @@
 import { Request, Response } from 'express'
 import { poolPromise } from '../config/index'
-import { AuthRequest } from '~/type'
+import { AuthRequest } from '../middlewares/authenticate'
 
 // Staff xem danh sách các lịch hẹn
 export const getAppointmentsForStaff = async (req: Request, res: Response): Promise<void> => {
   try {
     const pool = await poolPromise
     const result = await pool.request().query(`
-      SELECT * FROM TestRequest
+      SELECT * FROM TestRequest WHERE Status = 'Pending'
     `)
 
     // Kiểm tra xem có lịch hẹn nào không
@@ -93,3 +93,48 @@ export const enterTestResult = async (req: Request, res: Response): Promise<void
 // export const createtestprocess = async (req:AuthRequest,res:Response): Promise<void> =>{
 //   const {}
 // }
+export const createTestConfirm = async (req: AuthRequest, res: Response): Promise<void> => {
+  const testreqid = req.params.TestRequestId
+  if (!testreqid) {
+    res.status(400).json({ message: 'Missing test Request' })
+  }
+  try {
+    const pool = await poolPromise
+    const testreq = await pool
+      .request()
+      .input('id', parseInt(testreqid))
+      .query('SELECT * FROM TestRequest WHERE TestRequestID = @id')
+    const testtype = await pool
+      .request()
+      .input('typeid', testreq.recordset[0].TestTypeID)
+      .query('SELECT * FROM TestType where id = @typeid')
+    const update = await pool
+      .request()
+      .input('testid', testreqid)
+      .input('status', 'Confirmed')
+      .query('UPDATE TestRequest Set Status = @status WHERE TestRequestID = @testid')
+    if (testtype.recordset[0].testName === 'Home') {
+      const kitid = 'K' + String(testreq.recordset[0].TestRequestID)
+      const insert = await pool
+        .request()
+        .input('kitid', kitid)
+        .input('testreqid', testreqid)
+        .input('accountId', testreq.recordset[0].CustomerID)
+        .query('Insert into TestHome(kitID,TestRequestID,AccountID) VALUES (@kitid,@testreqid,@accountId)')
+      res.json({ message: 'Test Process create successfully' })
+    } else if (testtype.recordset[0].testName === 'Center') {
+      const insert = await pool
+        .request()
+        .input('testreqid', testreqid)
+        .input('accountId', testreq.recordset[0].CustomerID)
+        .query('Insert into TestCenter(TestRequestID,AccountID) VALUES (@testreqid,@accountId)')
+      res.json({ message: 'Test Process create successfully' })
+    }
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: `Error entering test result: ${error.message}` })
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' })
+    }
+  }
+}

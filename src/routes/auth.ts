@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { authenticate } from '../middlewares/authenticate'
 import { isDefaultAdmin } from '../middlewares/isDefaultAdmin'
+
 import {
   registerHandler,
   loginHandler,

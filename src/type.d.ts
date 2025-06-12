@@ -10,7 +10,7 @@ export type Role = (typeof roles)[number]
 
 // AuthUser interface defines the user object with role, userId and email
 export interface AuthUser {
-  userId: string
+  accountId: number
   email: string
   role: Role
 }
