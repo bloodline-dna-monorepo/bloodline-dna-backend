@@ -15,7 +15,7 @@ export const register = async (email: string, password: string, confirmpassword:
   }
 
   // Kiểm tra định dạng email
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/
   if (!emailRegex.test(email)) {
     throw new Error('Email không hợp lệ')
   }

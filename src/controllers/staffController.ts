@@ -138,3 +138,44 @@ export const createTestConfirm = async (req: AuthRequest, res: Response): Promis
     }
   }
 }
+export const createTestResult = async (req: AuthRequest, res: Response): Promise<void> => {
+  const user = req.user
+  const { resultdata } = req.body
+  const testreqid = req.params.TestRequestID
+  const pool = await poolPromise
+  const sample = await pool
+    .request()
+    .input('testreqid', testreqid)
+    .query('SELECT * FROM Sample From SampleCagories WHERE TestRequestID = @testreqid')
+  const TestRequest = await pool
+    .request()
+    .input('id', testreqid)
+    .query('SELECT * FROM TestRequest WHERE TestRequestID = @id')
+  const TestType = await pool
+    .request()
+    .input('id', TestRequest.recordset[0].testTypeID)
+    .query('SELECT * From TestType WHERE id = @id')
+  if ((TestType.recordset[0].testName = 'Home')) {
+    const udhome = await pool
+      .request()
+      .input('status', 'Results Ready')
+      .input('Testreqid', testreqid)
+      .query('UPDATE TestHome Set Status = @status WHERE TestTypeID = @Testreqid')
+  } else if ((TestType.recordset[0].testName = 'Center')) {
+    const udhome = await pool
+      .request()
+      .input('status', 'Results Ready')
+      .input('Testreqid', testreqid)
+      .query('Update TestCenter Set Status = @status WHERE TestTypeID = @Testreqid')
+  }
+  const add = await pool
+    .request()
+    .input('testrqid', testreqid)
+    .input('Enterid', user?.accountId)
+    .input('resultdata', resultdata)
+    .input('EnterAt', Date.now)
+    .query(
+      'INSERT Into TestResults(TestRequestID, EnteredBy, ResultData, EnteredAt) Values (@testrqid,@Enterid,@resultdata,@EnterAt)'
+    )
+  res.json(add)
+}
