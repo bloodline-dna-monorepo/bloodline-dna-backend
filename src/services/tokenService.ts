@@ -18,19 +18,22 @@ export const generateAccessToken = (payload: Payload): string => {
 }
 
 // Tạo Refresh Token (Bỏ uuid, không cần nữa vì id sẽ tự động sinh trong SQL)
-export const generateRefreshToken = async (accountId: number): Promise<string> => {
+export const generateRefreshToken = async (payload: Payload): Promise<string> => {
   const pool = await poolPromise
 
   // Tạo refresh token
-  const refreshToken = jwt.sign({ accountId }, jwtSecret, { expiresIn: '7d' })
+  const refreshToken = jwt.sign(payload, jwtSecret, { expiresIn: '7d' })
 
   // Lấy thời gian hết hạn của refresh token
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN)
 
   try {
     // Thêm refresh token vào database
-    await pool.request().input('token', refreshToken).input('accountId', accountId).input('expiresAt', expiresAt)
-      .query(`
+    await pool
+      .request()
+      .input('token', refreshToken)
+      .input('accountId', payload.accountId)
+      .input('expiresAt', expiresAt).query(`
         INSERT INTO RefreshToken (token, account_id, expires_at)
         VALUES (@token, @accountId, @expiresAt)
       `)

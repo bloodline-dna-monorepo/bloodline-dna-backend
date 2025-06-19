@@ -90,7 +90,7 @@ export const login = async (email: string, password: string) => {
   }
 
   const accessToken = generateAccessToken(payload)
-  const refreshToken = await generateRefreshToken(user.AccountID)
+  const refreshToken = await generateRefreshToken(payload)
 
-  return { accessToken, refreshToken }
+  return { accessToken, refreshToken, payload }
 }
