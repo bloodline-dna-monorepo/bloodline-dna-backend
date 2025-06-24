@@ -1,0 +1,439 @@
+import { connectToDatabase, getDbPool } from '../config/database'
+
+interface TestRequestData {
+  userId: number
+  serviceId: number
+  collectionMethod: string
+  appointmentDate?: string
+}
+
+interface SampleInfo {
+  fullName: string
+  birthYear: number
+  gender: string
+  relationship: string
+  sampleType: string
+  commitment: boolean
+  signatureImage?: string
+}
+
+class TestRequestService {
+  async createTestRequest(userId: number | undefined, data: TestRequestData) {
+    const connection = await getDbPool()
+
+    const result = await connection
+      .request()
+      .input('userId', userId)
+      .input('serviceId', data.serviceId)
+      .input('collectionMethod', data.collectionMethod)
+      .input('appointmentDate', data.appointmentDate || null)
+      .input('status', 'Pending').query(`
+        INSERT INTO TestRequests (
+          AccountID, ServiceID, CollectionMethod, 
+          Appointment, Status, CreatedAt, UpdatedAt
+        )
+        OUTPUT INSERTED.TestRequestID
+        VALUES (
+          @userId, @serviceId, @collectionMethod,
+          @appointmentDate, @status, GETDATE(), GETDATE()
+        )
+      `)
+
+    const testRequestId = result.recordset[0].TestRequestID
+    return await this.getTestRequestById(testRequestId)
+  }
+
+  // async createTestRequestFromPayment(paymentId: number) {
+  //   const connection = await getDbPool()
+
+  //   // Get payment details
+  //   const paymentResult = await connection.request().input('paymentId', paymentId).query(`
+  //       SELECT UserID, ServiceID, CollectionMethod, AppointmentDate, AppointmentTime
+  //       FROM Payments
+  //       WHERE PaymentID = @paymentId AND PaymentStatus = 'Completed'
+  //     `)
+
+  //   if (paymentResult.recordset.length === 0) {
+  //     throw new Error('Payment not found or not completed')
+  //   }
+
+  //   const payment = paymentResult.recordset[0]
+
+  //   // Check if test request already exists
+  //   const existingRequest = await connection
+  //     .request()
+  //     .input('paymentId', paymentId)
+  //     .query(`SELECT TestRequestID FROM TestRequests WHERE PaymentID = @paymentId`)
+
+  //   if (existingRequest.recordset.length > 0) {
+  //     return existingRequest.recordset[0].TestRequestID
+  //   }
+
+  //   // Create test request
+  //   const testRequestData = {
+  //     userId: payment.UserID,
+  //     serviceId: payment.ServiceID,
+  //     paymentId: paymentId,
+  //     collectionMethod: payment.CollectionMethod,
+  //     appointmentDate: payment.AppointmentDate,
+  //     appointmentTime: payment.AppointmentTime
+  //   }
+
+  //   return await this.createTestRequest(testRequestData)
+  // }
+
+  async getAllTestRequests() {
+    const connection = await getDbPool()
+
+    const result = await connection.request().query(`
+      SELECT 
+        tr.TestRequestID,
+        tr.AccountID,
+        tr.ServiceID,
+        tr.CollectionMethod,
+        tr.Appointment,
+        tr.Status,
+        tr.CreatedAt,
+        tr.UpdatedAt,
+        s.ServiceName,
+        s.ServiceType,
+        s.Price,
+        s.SampleCount,
+        up.FullName as CustomerName,
+        a.Email as CustomerEmail
+      FROM TestRequests tr
+      INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+      INNER JOIN Accounts a ON tr.AccountID = a.AccountID
+      LEFT JOIN UserProfiles up ON tr.AccountID = up.AccountID
+       WHERE  tr.Status = 'Pending'
+      ORDER BY tr.CreatedAt DESC
+    `)
+
+    return result.recordset
+  }
+  async getTestRequestsByStaff(Staffid: number | undefined) {
+    const connection = await getDbPool()
+
+    const result = await connection.request().input('id', Staffid).query(`
+        SELECT 
+          tr.TestRequestID,
+          tr.AccountID,
+          tr.ServiceID,
+          tr.CollectionMethod,
+          tr.Appointment,
+          tr.Status,
+          tr.CreatedAt,
+          tr.UpdatedAt,
+          s.ServiceName,
+          s.ServiceType,
+          s.Price,
+          s.SampleCount,
+          up.FullName as CustomerName,
+          a.Email as CustomerEmail
+        FROM TestRequests tr
+        INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+        INNER JOIN Accounts a ON tr.AccountID = a.AccountID
+        LEFT JOIN UserProfiles up ON tr.AccountID = up.AccountID
+        WHERE tr.AssignedTo = @id
+        ORDER BY tr.CreatedAt DESC
+      `)
+
+    return result.recordset
+  }
+  async getTestRequestsByCustomer(AccountId: number | undefined) {
+    const connection = await getDbPool()
+
+    const result = await connection.request().input('id', AccountId).query(`
+        SELECT 
+          tr.TestRequestID,
+          tr.AccountID,
+          tr.ServiceID,
+          tr.CollectionMethod,
+          tr.Appointment,
+          tr.Status,
+          tr.CreatedAt,
+          tr.UpdatedAt,
+          s.ServiceName,
+          s.ServiceType,
+          s.Price,
+          s.SampleCount,
+          up.FullName as CustomerName,
+          a.Email as CustomerEmail
+        FROM TestRequests tr
+        INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+        INNER JOIN Accounts a ON tr.AccountID = a.AccountID
+        LEFT JOIN UserProfiles up ON tr.AccountID = up.AccountID
+        WHERE tr.AccountID = @id
+        ORDER BY tr.CreatedAt DESC
+      `)
+
+    return result.recordset
+  }
+
+  async getTestRequestById(testRequestId: number) {
+    const connection = await getDbPool()
+
+    const result = await connection.request().input('testRequestId', testRequestId).query(`
+        SELECT 
+          tr.TestRequestID,
+          tr.AccountID,
+          tr.ServiceID,
+          tr.CollectionMethod,
+          tr.Appointment,
+          tr.Status,
+          tr.AssignedTo,
+          tr.CreatedAt,
+          tr.UpdatedAt,
+          s.ServiceName,
+          s.ServiceType,
+          s.Price,
+          s.SampleCount,
+          s.Description,
+          up.FullName as CustomerName,
+          a.Email as CustomerEmail,
+          up.SignatureImage as CustomerSignature
+        FROM TestRequests tr
+        INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+        INNER JOIN Accounts a ON tr.AccountID = a.AccountID
+        LEFT JOIN UserProfiles up ON tr.AccountID = up.AccountID
+        WHERE tr.TestRequestID = @testRequestId
+      `)
+
+    if (result.recordset.length === 0) {
+      return null
+    }
+
+    const testRequest = result.recordset[0]
+
+    // Get sample information
+    const sampleResult = await connection.request().input('testRequestId', testRequestId).query(`
+        SELECT * FROM SampleCategorys 
+        WHERE TestRequestID = @testRequestId
+      `)
+
+    testRequest.sampleInformation = sampleResult.recordset
+
+    return testRequest
+  }
+
+  async markInProgress(testRequestId: number, staffId: number | undefined) {
+    const connection = await getDbPool()
+
+    await connection
+      .request()
+      .input('testRequestId', testRequestId)
+      .input('AssignedTo', staffId)
+      .input('status', 'In Progress').query(`
+        UPDATE TestRequests 
+        SET Status = @status,
+            AssignedTo = @AssignedTo,
+            UpdatedAt = GETDATE()
+        WHERE TestRequestID = @testRequestId
+      `)
+
+    return await this.getTestRequestById(testRequestId)
+  }
+
+  async createTestResult(testRequestId: number, staffId: number | undefined, testResults: any) {
+    const connection = await getDbPool()
+
+    // Insert or update test results
+    const existingResults = await connection
+      .request()
+      .input('testRequestId', testRequestId)
+      .query(`SELECT ResultID FROM TestResults WHERE TestRequestID = @testRequestId`)
+
+    if (existingResults.recordset.length > 0) {
+      // Update existing results
+      await connection
+        .request()
+        .input('testRequestId', testRequestId)
+        .input('results', JSON.stringify(testResults))
+        .input('enteredBy', staffId).query(`
+          UPDATE TestResults 
+          SET Results = @results,
+              EnteredBy = @enteredBy,
+              EnteredAt = GETDATE()
+          WHERE TestRequestID = @testRequestId
+        `)
+    } else {
+      // Insert new results
+      await connection
+        .request()
+        .input('testRequestId', testRequestId)
+        .input('results', JSON.stringify(testResults))
+        .input('enteredBy', staffId).query(`
+          INSERT INTO TestResults (TestRequestID, Results, EnteredBy, EnteredAt)
+          VALUES (@testRequestId, @results, @enteredBy, GETDATE())
+        `)
+    }
+
+    // Update test request status
+    await connection.request().input('testRequestId', testRequestId).input('status', 'Pending').query(`
+        UPDATE TestRequests 
+        SET Status = @status,
+            UpdatedAt = GETDATE()
+        WHERE TestRequestID = @testRequestId
+      `)
+
+    return await this.getTestRequestById(testRequestId)
+  }
+
+  async completeTestRequestByManager(testRequestId: number, managerId: number | undefined) {
+    const connection = await getDbPool()
+
+    // Update test results with manager confirmation
+    await connection.request().input('testRequestId', testRequestId).input('confirmedBy', managerId).query(`
+        UPDATE TestResults 
+        SET ConfirmedBy = @confirmedBy,
+            ConfirmedAt = GETDATE()
+        WHERE TestRequestID = @testRequestId
+      `)
+
+    // Update test request status
+    await connection.request().input('testRequestId', testRequestId).input('status', 'Results Available').query(`
+        UPDATE TestRequests 
+        SET Status = @status,
+            UpdatedAt = GETDATE()
+        WHERE TestRequestID = @testRequestId
+      `)
+
+    return await this.getTestRequestById(testRequestId)
+  }
+
+  async submitSampleInfoByCustomer(
+    testRequestId: number,
+    userId: number | undefined,
+    SampleType: string,
+    TesterName: string,
+    CMND: string,
+    YOB: number,
+    Gender: string,
+    Relationship: string
+  ) {
+    const connection = await getDbPool()
+
+    // Verify customer owns this test request
+    const testRequest = await this.getTestRequestById(testRequestId)
+    if (!testRequest || testRequest.UserID !== userId) {
+      throw new Error('Unauthorized access to test request')
+    }
+
+    // Update test request status
+    await connection
+      .request()
+      .input('testRequestId', testRequestId)
+      .input('userId', userId)
+      .input('SampleType', SampleType)
+      .input('TesterName', TesterName)
+      .input('CMND', CMND)
+      .input('YOB', YOB)
+      .input('Gender', Gender)
+      .input('Relationship', Relationship).query(`
+        Insert Into SampleCategorys(SampleType,TestRequestID,TesterName,CMND,YOB,Gender,Relationship) 
+        Values (@SampleType,@testRequestId,@TesterName,@CMND,@YOB,@Gender,@Relationship)
+      `)
+
+    return await this.getTestRequestById(testRequestId)
+  }
+
+  async confirmSampleInfoByStaff(testRequestId: number, staffId: number | undefined) {
+    const connection = await getDbPool()
+    await connection.request().input('testRequestId', testRequestId).input('status', 'Confirmed').query(`
+        UPDATE SampleCategorys 
+        SET Status = @status
+        WHERE TestRequestID = @testRequestId
+      `)
+    await connection
+      .request()
+      .input('testRequestId', testRequestId)
+      .input('staffId', staffId)
+      .input('status', 'In Progress').query(`
+        UPDATE TestRequests 
+        SET Status = @status,
+            StaffID = @staffId,
+            UpdatedAt = GETDATE()
+        WHERE TestRequestID = @testRequestId
+      `)
+
+    return await this.getTestRequestById(testRequestId)
+  }
+
+  async getTestResults(testRequestId: number) {
+    const connection = await getDbPool()
+
+    const result = await connection.request().input('testRequestId', testRequestId).query(`
+        SELECT 
+          tr.ResultID,
+          tr.TestRequestID,
+          tr.Results,
+          tr.EnteredBy,
+          tr.EnteredAt,
+          tr.ConfirmedBy,
+          tr.ConfirmedAt,
+          staff.FullName as EnteredByName,
+          manager.FullName as ConfirmedByName
+        FROM TestResults tr
+        LEFT JOIN UserProfiles staff ON tr.EnteredBy = staff.AccountID
+        LEFT JOIN UserProfiles manager ON tr.ConfirmedBy = manager.AccountID
+        WHERE tr.TestRequestID = @testRequestId
+      `)
+
+    return result.recordset[0] || null
+  }
+
+  async generateResultsPDF(testRequestId: number): Promise<Buffer> {
+    const testRequest = await this.getTestRequestById(testRequestId)
+    const results = await this.getTestResults(testRequestId)
+
+    // Simple PDF content generation (in real implementation, use proper PDF library)
+    const pdfContent = `
+      DNA Test Results Report
+      
+      Test Request ID: ${testRequest.TestRequestID}
+      Service: ${testRequest.ServiceName}
+      Service Type: ${testRequest.ServiceType}
+      
+      Customer Information:
+      Name: ${testRequest.CustomerName || 'N/A'}
+      Email: ${testRequest.CustomerEmail}
+      
+      Sample Information:
+      ${testRequest.sampleInformation
+        .map(
+          (sample: any) => `
+        Sample ${sample.SampleNumber}:
+        - Name: ${sample.FullName}
+        - Birth Year: ${sample.BirthYear}
+        - Gender: ${sample.Gender}
+        - Relationship: ${sample.Relationship}
+        - Sample Type: ${sample.SampleType}
+      `
+        )
+        .join('\n')}
+      
+      Test Results:
+      ${results ? JSON.stringify(JSON.parse(results.Results), null, 2) : 'Results not available'}
+      
+      Report Generated: ${new Date().toISOString()}
+    `
+
+    return Buffer.from(pdfContent, 'utf8')
+  }
+  async VerifytestResultByManager(testResultId: number, managerId: number | undefined) {
+    const connection = await getDbPool()
+    const update = await connection
+      .request()
+      .input('id', testResultId)
+      .input('Mid', managerId)
+      .input('status', 'Verified')
+      .query('Update TestResults Set ConfirmBy = @Mid, Status = @status WHERE TestResultID = @id')
+    const result = await connection
+      .request()
+      .input('id', testResultId)
+      .query('SELECT * From TestResults WHERE TestResultID = @id')
+    return result.recordset
+  }
+}
+
+export const testRequestService = new TestRequestService()

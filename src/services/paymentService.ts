@@ -1,103 +1,190 @@
+import { getDbPool } from '../config/database'
+import { serviceService } from './serviceService'
 import crypto from 'crypto'
-import sql from 'mssql'
-import { poolPromise } from '../config'
-import type { PaymentData, PaymentResult } from '../types'
+import { config } from '../config/config'
 
-export class PaymentService {
-  static async createVNPayPayment(paymentData: PaymentData): Promise<PaymentResult> {
-    try {
-      const vnpUrl = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
-      const vnpTmnCode = process.env.VNP_TMN_CODE || 'VNP_TMN_CODE'
-      const vnpHashSecret = process.env.VNP_HASH_SECRET || 'VNP_HASH_SECRET'
+interface PaymentCheckoutData {
+  userId: number
+  serviceId: number
+  collectionMethod: string
+  appointmentDate?: string
+  appointmentTime?: string
+}
 
-      const transactionId = `TXN${Date.now()}`
-      const createDate = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
+class PaymentService {
+  async createPaymentCheckout(data: PaymentCheckoutData) {
+    const connection = await getDbPool()
 
-      const vnpParams: Record<string, string> = {
-        vnp_Version: '2.1.0',
-        vnp_Command: 'pay',
-        vnp_TmnCode: vnpTmnCode,
-        vnp_Amount: (paymentData.amount * 100).toString(),
-        vnp_CreateDate: createDate,
-        vnp_CurrCode: 'VND',
-        vnp_IpAddr: '127.0.0.1',
-        vnp_Locale: 'vn',
-        vnp_OrderInfo: paymentData.orderInfo,
-        vnp_OrderType: 'other',
-        vnp_ReturnUrl: paymentData.returnUrl,
-        vnp_TxnRef: transactionId
-      }
+    // Get service details
+    const service = await serviceService.getServiceById(data.serviceId)
+    if (!service) {
+      throw new Error('Service not found')
+    }
 
-      const sortedParams = Object.keys(vnpParams).sort()
-      const queryString = sortedParams.map((key) => `${key}=${encodeURIComponent(vnpParams[key])}`).join('&')
+    // Validate collection method based on service type
+    if (service.serviceType === 'Administrative' && data.collectionMethod !== 'Facility') {
+      throw new Error('Administrative services only support facility collection')
+    }
 
-      const hmac = crypto.createHmac('sha512', vnpHashSecret)
-      hmac.update(queryString)
-      const secureHash = hmac.digest('hex')
+    // Create payment record
+    const result = await connection
+      .request()
+      .input('registrationId', null) // Will be set later when test request is created
+      .input('amount', service.price)
+      .input('paymentMethod', 'VNPay')
+      .input('paymentStatus', 'Pending')
+      .input('serviceId', data.serviceId)
+      .input('userId', data.userId)
+      .input('collectionMethod', data.collectionMethod)
+      .input('appointmentDate', data.appointmentDate || null)
+      .input('appointmentTime', data.appointmentTime || null).query(`
+        INSERT INTO Payments (
+          RegistrationID, Amount, PaymentMethod, PaymentStatus, 
+          TransactionID, PaymentDate, CreatedAt, UpdatedAt,
+          ServiceID, UserID, CollectionMethod, AppointmentDate, AppointmentTime
+        )
+        OUTPUT INSERTED.PaymentID
+        VALUES (
+          @registrationId, @amount, @paymentMethod, @paymentStatus,
+          NULL, NULL, GETDATE(), GETDATE(),
+          @serviceId, @userId, @collectionMethod, @appointmentDate, @appointmentTime
+        )
+      `)
 
-      const paymentUrl = `${vnpUrl}?${queryString}&vnp_SecureHash=${secureHash}`
+    const paymentId = result.recordset[0].PaymentID
 
-      const pool = await poolPromise
-      await pool
-        .request()
-        .input('testRequestId', sql.Int, paymentData.testRequestId)
-        .input('amount', sql.Decimal(18, 2), paymentData.amount)
-        .input('paymentMethod', sql.NVarChar, 'VNPay')
-        .input('paymentReference', sql.NVarChar, transactionId)
-        .input('paymentStatus', sql.NVarChar, 'Pending').query(`
-          INSERT INTO Payments (TestRequestID, Amount, PaymentMethod, PaymentReference, PaymentStatus, CreatedAt)
-          VALUES (@testRequestId, @amount, @paymentMethod, @paymentReference, @paymentStatus, GETDATE())
-        `)
+    // Generate VNPay URL
+    const vnpayUrl = this.generateVNPayUrl(paymentId, service.price, service.serviceName)
 
-      return {
-        paymentUrl,
-        transactionId
-      }
-    } catch (error) {
-      console.error('Create VNPay payment error:', error)
-      throw error
+    return {
+      paymentId,
+      paymentUrl: vnpayUrl,
+      amount: service.price,
+      serviceName: service.serviceName
     }
   }
 
-  static async verifyVNPayPayment(vnpParams: Record<string, string>): Promise<boolean> {
-    try {
-      const vnpHashSecret = process.env.VNP_HASH_SECRET || 'your_hash_secret'
-      const secureHash = vnpParams.vnp_SecureHash
-      delete vnpParams.vnp_SecureHash
+  private generateVNPayUrl(paymentId: number, amount: number, orderInfo: string): string {
+    const date = new Date()
+    const createDate = date
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}Z/, '')
 
-      const sortedParams = Object.keys(vnpParams).sort()
-      const queryString = sortedParams.map((key) => `${key}=${vnpParams[key]}`).join('&')
-
-      const hmac = crypto.createHmac('sha512', vnpHashSecret)
-      hmac.update(queryString)
-      const calculatedHash = hmac.digest('hex')
-
-      if (calculatedHash === secureHash && vnpParams.vnp_ResponseCode === '00') {
-        const pool = await poolPromise
-        await pool
-          .request()
-          .input('transactionId', sql.NVarChar, vnpParams.vnp_TxnRef)
-          .input('vnpayTransactionId', sql.NVarChar, vnpParams.vnp_TransactionNo).query(`
-            UPDATE Payments 
-            SET PaymentStatus = 'Completed', PaidAt = GETDATE(), VNPayTransactionID = @vnpayTransactionId
-            WHERE PaymentReference = @transactionId
-          `)
-
-        await pool.request().input('transactionId', sql.NVarChar, vnpParams.vnp_TxnRef).query(`
-            UPDATE TestRequest 
-            SET Status = 'Paid'
-            WHERE TestRequestID = (
-              SELECT TestRequestID FROM Payments WHERE PaymentReference = @transactionId
-            )
-          `)
-
-        return true
-      }
-
-      return false
-    } catch (error) {
-      console.error('Verify VNPay payment error:', error)
-      throw error
+    let vnp_Params: any = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: config.vnpay.tmnCode,
+      vnp_Locale: 'vn',
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: paymentId.toString(),
+      vnp_OrderInfo: orderInfo,
+      vnp_OrderType: 'other',
+      vnp_Amount: (amount * 100).toString(),
+      vnp_ReturnUrl: config.vnpay.returnUrl,
+      vnp_IpAddr: '127.0.0.1',
+      vnp_CreateDate: createDate
     }
+
+    vnp_Params = this.sortObject(vnp_Params)
+
+    const queryString = Object.keys(vnp_Params)
+      .map((key) => `${key}=${encodeURIComponent(vnp_Params[key])}`)
+      .join('&')
+
+    const hmac = crypto.createHmac('sha512', config.vnpay.hashSecret)
+    const signed = hmac.update(Buffer.from(queryString, 'utf-8')).digest('hex')
+    vnp_Params['vnp_SecureHash'] = signed
+
+    const finalQuery = Object.keys(vnp_Params)
+      .map((key) => `${key}=${encodeURIComponent(vnp_Params[key])}`)
+      .join('&')
+
+    return config.vnpay.url + '?' + finalQuery
+  }
+
+  verifyVNPaySignature(vnpayData: any): boolean {
+    const secureHash = vnpayData.vnp_SecureHash
+    delete vnpayData.vnp_SecureHash
+    delete vnpayData.vnp_SecureHashType
+
+    const sortedParams = this.sortObject(vnpayData)
+    const queryString = Object.keys(sortedParams)
+      .map((key) => `${key}=${sortedParams[key]}`)
+      .join('&')
+
+    const hmac = crypto.createHmac('sha512', config.vnpay.hashSecret)
+    const checkSum = hmac.update(Buffer.from(queryString, 'utf-8')).digest('hex')
+
+    return secureHash === checkSum
+  }
+
+  async updatePaymentStatus(vnpayData: any) {
+    const connection = await getDbPool()
+
+    const paymentId = Number.parseInt(vnpayData.vnp_TxnRef)
+    const responseCode = vnpayData.vnp_ResponseCode
+    const transactionNo = vnpayData.vnp_TransactionNo
+
+    const status = responseCode === '00' ? 'Completed' : 'Failed'
+
+    const result = await connection
+      .request()
+      .input('paymentId', paymentId)
+      .input('status', status)
+      .input('transactionId', transactionNo).query(`
+        UPDATE Payments 
+        SET PaymentStatus = @status, 
+            TransactionID = @transactionId,
+            PaymentDate = GETDATE(),
+            UpdatedAt = GETDATE()
+        OUTPUT INSERTED.*
+        WHERE PaymentID = @paymentId
+      `)
+
+    return result.recordset[0]
+  }
+
+  async getPaymentById(paymentId: number, userId?: number) {
+    const connection = await getDbPool()
+
+    let query = `
+      SELECT 
+        p.PaymentID,
+        p.Amount,
+        p.PaymentStatus,
+        p.PaymentMethod,
+        p.TransactionID,
+        p.PaymentDate,
+        p.CollectionMethod,
+        p.AppointmentDate,
+        p.AppointmentTime,
+        s.ServiceName,
+        s.ServiceType
+      FROM Payments p
+      INNER JOIN Services s ON p.ServiceID = s.ServiceID
+      WHERE p.PaymentID = @paymentId
+    `
+
+    const request = connection.request().input('paymentId', paymentId)
+
+    if (userId) {
+      query += ' AND p.UserID = @userId'
+      request.input('userId', userId)
+    }
+
+    const result = await request.query(query)
+    return result.recordset[0]
+  }
+
+  private sortObject(obj: any) {
+    const sorted: any = {}
+    const keys = Object.keys(obj).sort()
+    keys.forEach((key) => {
+      sorted[key] = obj[key]
+    })
+    return sorted
   }
 }
+
+export const paymentService = new PaymentService()

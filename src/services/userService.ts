@@ -1,40 +1,150 @@
-import bcrypt from 'bcrypt'
-import { poolPromise } from '../config' // Kết nối với cơ sở dữ liệu
+import { getDbPool } from '../config/database'
 
-// Tạo người dùng mới và lưu vào cơ sở dữ liệu
-export const createUser = async (email: string, password: string, role: string): Promise<any> => {
-  const passwordHash = await bcrypt.hash(password, 10)
+import type { UserProfile } from '../types/type'
 
-  try {
-    const pool = await poolPromise
-    const result = await pool.request().input('email', email).input('password', passwordHash).input('role', role)
-      .query(`
-        INSERT INTO Users (Email, PasswordHash, Role)
-        VALUES (@email, @password, @role)
-        SELECT SCOPE_IDENTITY() AS UserID
-      `)
+export const userService = {
+  // Get user profile by account ID
+  getUserProfile: async (accountId: number): Promise<UserProfile | null> => {
+    try {
+      const pool = await getDbPool()
+      const result = await pool.request().input('accountId', accountId).query(`
+          SELECT up.*, a.Email as AccountEmail
+          FROM UserProfiles up
+          INNER JOIN Accounts a ON up.AccountID = a.AccountID
+          WHERE up.AccountID = @accountId
+        `)
 
-    const userId = result.recordset[0].UserID // Lấy UserID từ cơ sở dữ liệu
-    return { id: userId, email, role }
-  } catch (error) {
-    throw new Error('Error creating user')
+      if (result.recordset.length === 0) {
+        return null
+      }
+
+      const profile = result.recordset[0]
+      return profile
+    } catch (error) {
+      console.error('Error getting user profile:', error)
+      throw error
+    }
+  },
+
+  // Update user profile
+  updateUserProfile: async (accountId: number, updateData: Partial<UserProfile>): Promise<UserProfile> => {
+    try {
+      const pool = await getDbPool()
+
+      const { FullName, Email, PhoneNumber, Address, DateOfBirth } = updateData
+
+      // Build dynamic update query
+      const updateFields: string[] = []
+      const request = pool.request().input('accountId', accountId)
+
+      if (FullName !== undefined) {
+        updateFields.push('FullName = @fullName')
+        request.input('fullName', FullName)
+      }
+      if (PhoneNumber !== undefined) {
+        updateFields.push('PhoneNumber = @phoneNumber')
+        request.input('phoneNumber', PhoneNumber)
+      }
+      if (Address !== undefined) {
+        updateFields.push('Address = @address')
+        request.input('address', Address)
+      }
+      if (DateOfBirth !== undefined) {
+        updateFields.push('DateOfBirth = @dateOfBirth')
+        request.input('dateOfBirth', DateOfBirth)
+      }
+
+      if (updateFields.length > 0) {
+        updateFields.push('UpdatedAt = GETDATE()')
+
+        await request.query(`
+          UPDATE UserProfiles 
+          SET ${updateFields.join(', ')}
+          WHERE AccountID = @accountId
+        `)
+      }
+
+      // Return updated profile
+      const updatedProfile = await userService.getUserProfile(accountId)
+      return updatedProfile!
+    } catch (error) {
+      console.error('Error updating user profile:', error)
+      throw error
+    }
+  },
+
+  // Update signature
+  updateSignature: async (accountId: number, signaturePath: string): Promise<void> => {
+    try {
+      const pool = await getDbPool()
+      await pool.request().input('accountId', accountId).input('signaturePath', signaturePath).query(`
+          UPDATE UserProfiles 
+          SET SignatureImage = @signaturePath, UpdatedAt = GETDATE()
+          WHERE AccountID = @accountId
+        `)
+    } catch (error) {
+      console.error('Error updating signature:', error)
+      throw error
+    }
+  },
+
+  // Get all users with pagination (Admin only)
+  getAllUsers: async (email: string | undefined): Promise<any[]> => {
+    try {
+      const pool = await getDbPool()
+
+      // Get total count
+      // Get users with pagination
+      const result = await pool.request().input('email', email).query(`
+          SELECT 
+            a.AccountID,
+            a.Email,
+            a.RoleID,
+            a.CreatedAt,
+            up.FullName,
+            up.PhoneNumber,
+            up.Address,
+            up.DateOfBirth
+          FROM Accounts a
+          LEFT JOIN UserProfiles up ON a.AccountID = up.AccountID
+          where a.Email like @email
+        `)
+      return result.recordset
+    } catch (error) {
+      console.error('Error getting all users:', error)
+      throw error
+    }
+  },
+
+  // Update user role (Admin only)
+  updateUserRole: async (email: string, roleId: number): Promise<void> => {
+    try {
+      const pool = await getDbPool()
+      await pool
+        .request()
+        .input('email', email)
+        .input('roleId', roleId)
+        .query('UPDATE Accounts SET RoleID = @roleId WHERE Email = @email')
+    } catch (error) {
+      console.error('Error updating user role:', error)
+      throw error
+    }
+  },
+
+  // Toggle user status (Admin only)
+  toggleUserStatus: async (userId: number): Promise<void> => {
+    try {
+      const pool = await getDbPool()
+      // Note: This assumes you have an IsActive column in Accounts table
+      // If not, you might need to add this column or implement differently
+      await pool.request().input('userId', userId).query(`
+          UPDATE Accounts 
+          SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END
+          WHERE AccountID = @userId
+        `)
+    } catch (error) {
+      console.error('Error toggling user status:', error)
+      throw error
+    }
   }
-}
-
-// Tìm người dùng qua email
-export const findUserByEmail = async (email: string): Promise<any> => {
-  try {
-    const pool = await poolPromise
-    const result = await pool.request().input('email', email).query(`
-      SELECT UserID, Email, PasswordHash, Role FROM Users WHERE Email = @email
-    `)
-    return result.recordset[0] // Trả về người dùng đầu tiên (nếu có)
-  } catch (error) {
-    throw new Error('Error finding user')
-  }
-}
-
-// Kiểm tra mật khẩu
-export const verifyPassword = async (user: any, password: string): Promise<boolean> => {
-  return bcrypt.compare(password, user.PasswordHash)
 }

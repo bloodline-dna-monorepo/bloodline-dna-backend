@@ -1,20 +1,45 @@
-import app from './app'
-import { port } from './config'
-import { initDefaultAdmin } from './utils/initAdmin'
+import app, { initializeApp } from './app'
+import { config } from './config/config'
+import { closeDbPool } from './config/database'
 
-async function start() {
+const startServer = async () => {
   try {
-    // Đảm bảo admin mặc định được khởi tạo
-    await initDefaultAdmin()
+    // Initialize the application
+    await initializeApp()
 
-    // Khởi động server trên cổng đã chỉ định
-    app.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`)
+    // Start the server
+    const server = app.listen(config.port, () => {
+      console.log(`🚀 Server running on port ${config.port}`)
+      console.log(`📊 Environment: ${config.nodeEnv}`)
+      console.log(`🌐 CORS Origin: ${config.cors.origin}`)
     })
-  } catch (err) {
-    console.error('Failed to initialize admin or start the server', err)
-    process.exit(1) // Thoát chương trình nếu có lỗi trong quá trình khởi tạo hoặc chạy server
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n📡 Received ${signal}. Starting graceful shutdown...`)
+
+      server.close(async () => {
+        console.log('🔌 HTTP server closed')
+
+        try {
+          await closeDbPool()
+          console.log('✅ Graceful shutdown completed')
+          process.exit(0)
+        } catch (error) {
+          console.error('❌ Error during shutdown:', error)
+          process.exit(1)
+        }
+      })
+    }
+
+    // Handle shutdown signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+  } catch (error) {
+    console.error('❌ Failed to start server:', error)
+    process.exit(1)
   }
 }
 
-start()
+// Start the server
+startServer()

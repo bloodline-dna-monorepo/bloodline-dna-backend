@@ -1,54 +1,116 @@
 import express from 'express'
 import cors from 'cors'
-import corsOptions from './config/cors'
-import { errorHandler } from './middlewares/errorHandler'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
+import path from 'path'
+import fs from 'fs'
+import { config } from './config/config'
+import { connectToDatabase, createDefaultAdmin } from './config/database'
+import { errorMiddleware } from './middlewares/errorMiddleware'
 
 // Import routes
-import authRoutes from './routes/auth'
-import appointmentsRoutes from './routes/appointments'
-import customerRoutes from './routes/customer'
-import managerRoutes from './routes/manager'
-import staffRoutes from './routes/staff'
-import paymentRoutes from './routes/payment'
-import staffDashboardRoutes from './routes/staffDashboard'
-import AdminRoutes from './routes/AdminRoutes'
-import helmet from 'helmet'
+import authRoutes from './routes/authRoutes'
+import userRoutes from './routes/userRoutes'
+import adminRoute from './routes/adminRoute'
 import morgan from 'morgan'
-import logger from './utils/logger'
+import { serviceRoutes } from './routes/serviceRoutes'
+import { testRequestRoutes } from './routes/testRequestRoutes'
+
+// import serviceRoutes from "./routes/serviceRoutes"
 
 const app = express()
-// Logging middleware
-app.use(
-  morgan('dev', {
-    stream: {
-      write: (message) => logger.http(message.trim())
-    }
-  })
-)
+
+// Create upload directories if they don't exist
+const uploadDirs = ['uploads', 'uploads/signatures', 'uploads/documents']
+uploadDirs.forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+})
 
 // Security middleware
 app.use(helmet())
-// Middleware
-app.use(cors(corsOptions))
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
 
-// Routes
-app.use('/api/auth', authRoutes)
-app.use('/api/appointments', appointmentsRoutes)
-app.use('/api/customer', customerRoutes)
-app.use('/api/manager', managerRoutes)
-app.use('/api/staff', staffRoutes)
-app.use('/api/payment', paymentRoutes)
-app.use('/api/staff-dashboard', staffDashboardRoutes)
-app.use('/api/admin', AdminRoutes)
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+app.use(limiter)
 
-// Health check
+// CORS configuration
+app.use(
+  cors({
+    origin: config.cors.origin,
+    credentials: config.cors.credentials,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+)
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+
+// Serve static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+
+// Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ message: 'Server is running' })
+  res.status(200).json({
+    success: true,
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  })
 })
 
-// Error handling middleware
-app.use(errorHandler)
+if (config.nodeEnv === 'development') {
+  app.use(morgan('dev'))
+}
+
+// API routes
+app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
+// app.use("/api/services", serviceRoutes)
+app.use('/api/admin', adminRoute)
+app.use('/api/services', serviceRoutes)
+// app.use('/api/payment', paymentRoutes)
+app.use('/api/test-requests', testRequestRoutes)
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`,
+    method: req.method
+  })
+})
+
+// Global error handler (must be last)
+app.use(errorMiddleware)
+
+// Initialize application
+export const initializeApp = async (): Promise<void> => {
+  try {
+    // Connect to database
+    await connectToDatabase()
+    console.log('✅ Database connected successfully')
+
+    // Create default admin account
+    await createDefaultAdmin()
+    console.log('✅ Default admin account verified')
+
+    console.log('✅ Application initialized successfully')
+  } catch (error) {
+    console.error('❌ Failed to initialize application:', error)
+    throw error
+  }
+}
 
 export default app

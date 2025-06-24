@@ -1,8 +1,7 @@
 import type { Response, Request } from 'express'
-import type { AuthRequest } from '../middlewares/authenticate'
-import { register, login } from '../services/authService'
-import { PasswordChange } from '../services/passwordService'
-import { verifyRefreshToken, generateAccessToken } from '../services/tokenService'
+import type { AuthRequest } from '../middlewares/authMiddleware'
+import { register, login, verifyRefreshToken, generateAccessToken, PasswordChange } from '../services/authService'
+import { getDbPool } from '../config/database'
 
 export const registerHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   const { email, password, confirmPassword } = req.body
@@ -19,7 +18,7 @@ export const registerHandler = async (req: AuthRequest, res: Response): Promise<
       res.status(409).json({ message: 'Email đã tồn tại' })
       return
     }
-    res.status(201).json({ message: 'Đăng ký thành công', user, success: true })
+    res.status(201).json({ message: 'Đăng ký thành công', success: true })
   } catch (error: unknown) {
     if (error instanceof Error) {
       res.status(500).json({ message: error.message })
@@ -45,8 +44,8 @@ export const loginHandler = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     res.json({
-      AccessToken: tokens.accessToken,
-      RefreshToken: tokens.refreshToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       success: true,
       user: tokens.payload
     })
@@ -65,21 +64,24 @@ export const PasswordChangeHandler = async (req: AuthRequest, res: Response): Pr
     res.status(401).json({ message: 'Không có quyền truy cập' })
     return
   }
-
-  const { password, newPassword } = req.body
+  const { password, NewPassword, confirmNewPassword } = req.body
 
   // Kiểm tra mật khẩu cũ và mật khẩu mới
   if (!password) {
     res.status(400).json({ message: 'Mật khẩu cũ là bắt buộc' })
     return
   }
-  if (!newPassword) {
+  if (!NewPassword) {
     res.status(400).json({ message: 'Mật khẩu mới là bắt buộc' })
+    return
+  }
+  if (NewPassword !== confirmNewPassword) {
+    res.status(400).json({ message: 'Mật khẩu không trùng khớp' })
     return
   }
 
   try {
-    await PasswordChange(user.accountId, password, newPassword)
+    await PasswordChange(user.accountId, password, NewPassword)
     res.json({ message: 'Yêu cầu thay đổi mật khẩu đã được gửi để phê duyệt' })
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -92,7 +94,6 @@ export const PasswordChangeHandler = async (req: AuthRequest, res: Response): Pr
 
 export const refreshAccessTokenHandler = async (req: Request, res: Response): Promise<void> => {
   const { refreshToken } = req.body
-
   if (!refreshToken) {
     res.status(400).json({ message: 'Thiếu refresh token' })
     return
@@ -132,7 +133,7 @@ export const getCurrentUserInfo = async (req: AuthRequest, res: Response): Promi
     }
 
     // Get additional user information from database if needed
-    const pool = await import('../config/index').then((config) => config.poolPromise)
+    const pool = await getDbPool()
     const result = await pool.request().input('accountId', user.accountId).query(`
         SELECT a.AccountID as accountId, a.Email as email, r.RoleName as role, 
                up.FullName as fullName, up.Address as address, up.DateOfBirth as dateOfBirth
@@ -169,7 +170,7 @@ export const logoutHandler = async (req: Request, res: Response): Promise<void> 
     }
 
     // Revoke the refresh token in the database
-    const pool = await import('../config/index').then((config) => config.poolPromise)
+    const pool = await getDbPool()
     await pool.request().input('token', refreshToken).query(`
         UPDATE RefreshToken
         SET revoked = 1

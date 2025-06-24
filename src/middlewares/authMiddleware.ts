@@ -1,6 +1,6 @@
+import { config } from '../config/config'
 import type { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { jwtSecret } from '../config'
 
 export type Role = 'Admin' | 'Manager' | 'Staff' | 'Customer'
 
@@ -40,10 +40,34 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 
   try {
     // Giải mã token và gán vào req.user
-    const payload = jwt.verify(token, jwtSecret) as AuthUser
+    const payload = jwt.verify(token, config.jwt.secret) as AuthUser
     req.user = payload
     next() // Chuyển tiếp đến middleware tiếp theo
   } catch (error) {
     res.status(401).json({ message: 'Invalid or expired token' })
+  }
+}
+
+export const authorize = (allowedRoles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const user = req.user
+
+    if (!user) {
+      res.status(401).json({ message: 'Unauthorized: No user found in request' })
+      return
+    }
+
+    // Convert role to lowercase for case-insensitive comparison
+    const userRole = user.role.toLowerCase()
+    const normalizedAllowedRoles = allowedRoles.map((role) => role.toLowerCase())
+
+    if (!normalizedAllowedRoles.includes(userRole)) {
+      res.status(403).json({
+        message: `Forbidden: User role '${user.role}' is not allowed to access this resource`
+      })
+      return
+    }
+
+    next()
   }
 }
