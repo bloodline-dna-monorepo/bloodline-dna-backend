@@ -61,7 +61,9 @@ export const MESSAGES = {
     TEST_REQUEST_COMPLETED: 'Test request completed successfully',
     SAMPLE_INFO_SUBMITTED: 'Sample information submitted successfully',
     TEST_RESULTS_RETRIEVED: 'Test results retrieved successfully',
-    RESULTS_NOT_AVAILABLE: 'Test results are not available yet'
+    RESULTS_NOT_AVAILABLE: 'Test results are not available yet',
+    TEST_RESULT_NOT_FOUND: 'Test results not found',
+    TEST_RESULT_CONFIRM: 'Cofirm success'
   },
   FILE: {
     FILE_UPLOADED: 'File uploaded successfully',

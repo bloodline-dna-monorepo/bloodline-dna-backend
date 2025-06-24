@@ -2,6 +2,7 @@ import type { Response, Request } from 'express'
 import type { AuthRequest } from '../middlewares/authMiddleware'
 import { register, login, verifyRefreshToken, generateAccessToken, PasswordChange } from '../services/authService'
 import { getDbPool } from '../config/database'
+import { log } from 'console'
 
 export const registerHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   const { email, password, confirmPassword } = req.body
@@ -37,6 +38,7 @@ export const loginHandler = async (req: AuthRequest, res: Response): Promise<voi
   }
 
   try {
+    
     const tokens = await login(email, password)
     if (!tokens) {
       res.status(401).json({ message: 'Thông tin đăng nhập không hợp lệ' })

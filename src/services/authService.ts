@@ -97,7 +97,7 @@ export const login = async (email: string, password: string) => {
 }
 
 // Thời gian hết hạn của các token
-const ACCESS_TOKEN_EXPIRES_IN = '1000s'
+const ACCESS_TOKEN_EXPIRES_IN = '45m'
 const REFRESH_TOKEN_EXPIRES_IN = 7 * 24 * 60 * 60 * 1000 // 7 ngày
 
 // Tạo interface cho payload của token
@@ -117,7 +117,7 @@ export const generateRefreshToken = async (payload: Payload): Promise<string> =>
   const pool = await getDbPool()
 
   // Tạo refresh token
-  const refreshToken = jwt.sign(payload, config.jwt.secret, { expiresIn: '7d' })
+  const refreshToken = jwt.sign(payload, config.jwt.secret, { expiresIn: REFRESH_TOKEN_EXPIRES_IN })
 
   // Lấy thời gian hết hạn của refresh token
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN)

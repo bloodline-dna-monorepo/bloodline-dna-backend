@@ -234,49 +234,30 @@ class TestRequestService {
     return await this.getTestRequestById(testRequestId)
   }
 
-  async createTestResult(testRequestId: number, staffId: number | undefined, testResults: any) {
+  async createTestResult(testRequestId: number, staffId: number | undefined, testResults: string) {
     const connection = await getDbPool()
 
     // Insert or update test results
-    const existingResults = await connection
+ 
+    // Insert new results
+    await connection
       .request()
       .input('testRequestId', testRequestId)
-      .query(`SELECT ResultID FROM TestResults WHERE TestRequestID = @testRequestId`)
-
-    if (existingResults.recordset.length > 0) {
-      // Update existing results
-      await connection
-        .request()
-        .input('testRequestId', testRequestId)
-        .input('results', JSON.stringify(testResults))
-        .input('enteredBy', staffId).query(`
-          UPDATE TestResults 
-          SET Results = @results,
-              EnteredBy = @enteredBy,
-              EnteredAt = GETDATE()
-          WHERE TestRequestID = @testRequestId
+      .input('result', testResults)
+      .input('enterBy', staffId).query(`
+          INSERT INTO TestResults (TestRequestID, Result, EnterBy, EnterDate)
+          VALUES (@testRequestId, @result, @enterBy, GETDATE())
         `)
-    } else {
-      // Insert new results
-      await connection
-        .request()
-        .input('testRequestId', testRequestId)
-        .input('results', JSON.stringify(testResults))
-        .input('enteredBy', staffId).query(`
-          INSERT INTO TestResults (TestRequestID, Results, EnteredBy, EnteredAt)
-          VALUES (@testRequestId, @results, @enteredBy, GETDATE())
-        `)
-    }
 
     // Update test request status
-    await connection.request().input('testRequestId', testRequestId).input('status', 'Pending').query(`
-        UPDATE TestRequests 
-        SET Status = @status,
-            UpdatedAt = GETDATE()
-        WHERE TestRequestID = @testRequestId
-      `)
 
     return await this.getTestRequestById(testRequestId)
+  }
+
+  async viewCreateTestResult() {
+    const connection = await getDbPool()
+    const viewCreateTestResult = await connection.request().query(`Select * from TestResults where Status = 'Pending'`)
+    return viewCreateTestResult.recordset
   }
 
   async completeTestRequestByManager(testRequestId: number, managerId: number | undefined) {
@@ -428,10 +409,20 @@ class TestRequestService {
       .input('Mid', managerId)
       .input('status', 'Verified')
       .query('Update TestResults Set ConfirmBy = @Mid, Status = @status WHERE TestResultID = @id')
+
     const result = await connection
       .request()
       .input('id', testResultId)
       .query('SELECT * From TestResults WHERE TestResultID = @id')
+    const updatereq = await connection
+      .request()
+      .input('testRequestId', result.recordset[0].TestRequestID)
+      .input('status', 'Completed').query(`
+        UPDATE TestRequests 
+        SET Status = @status,
+            UpdatedAt = GETDATE()
+        WHERE TestRequestID = @testRequestId
+      `)
     return result.recordset
   }
 }

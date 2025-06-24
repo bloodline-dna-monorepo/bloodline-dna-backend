@@ -98,7 +98,6 @@ class TestRequestController {
   createTestResultbyStaff = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { testRequestId } = req.params
     const userId = req.user?.accountId
-    const userRole = req.user?.role
     const { testResults } = req.body
 
     // Staff
@@ -170,13 +169,17 @@ class TestRequestController {
     res.send(pdfBuffer)
   })
   verifyTestResult = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-    const testResultId = req.params.verifyTestResult
+    const testResultId = req.params.testResultId
     const user = req.user
     if (!testResultId) {
       res.status(400).json({ message: 'Missing test Result' })
     }
     try {
       const result = await testRequestService.VerifytestResultByManager(Number.parseInt(testResultId), user?.accountId)
+      res.status(200).json({
+        message: MESSAGES.TEST_REQUEST.TEST_RESULT_CONFIRM,
+        data: result
+      })
     } catch (error: unknown) {
       if (error instanceof Error) {
         res.status(500).json({ message: `Error entering test result: ${error.message}` })
@@ -188,8 +191,6 @@ class TestRequestController {
   getTestRequestByStaff = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     const userid = req.user?.accountId
     try {
-      console.log('⚙️  getTestRequestByStaff called with user:', req.user)
-
       const result = await testRequestService.getTestRequestsByStaff(userid)
 
       res.status(200).json({ message: MESSAGES.TEST_REQUEST.TEST_REQUEST_RETRIEVED, data: result })
@@ -203,9 +204,9 @@ class TestRequestController {
   })
   getTestRequestByCustomer = asyncHandler(
     async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-      const userid = req.user?.accountId
+      const userId = req.user?.accountId
       try {
-        const result = await testRequestService.getTestRequestsByCustomer(userid)
+        const result = await testRequestService.getTestRequestsByCustomer(userId)
 
         res.status(200).json({ message: MESSAGES.TEST_REQUEST.TEST_REQUEST_RETRIEVED, data: result })
       } catch (error: unknown) {
@@ -217,6 +218,14 @@ class TestRequestController {
       }
     }
   )
+  viewCreateTestResult = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await testRequestService.viewCreateTestResult()
+      res.status(200).json({ message: MESSAGES.TEST_REQUEST.TEST_RESULTS_RETRIEVED, data: result })
+    } catch (error) {
+      res.status(404).json({ message: MESSAGES.TEST_REQUEST.TEST_RESULT_NOT_FOUND })
+    }
+  })
 }
 
 export const testRequestController = new TestRequestController()
