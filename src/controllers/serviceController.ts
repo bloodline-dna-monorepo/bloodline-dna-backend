@@ -10,6 +10,19 @@ class ServiceController {
     return
   })
 
+  getServiceByType = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { serviceType } = req.params
+    const service = await serviceService.getServiceByName(serviceType)
+
+    if (!service) {
+      res.status(404).json({ message: MESSAGES.SERVICE.NOT_FOUND, service })
+      return
+    }
+
+    res.status(404).json({ message: MESSAGES.SERVICE.SERVICES_RETRIEVED, service })
+    return
+  })
+
   getServiceById = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { serviceId } = req.params
     const service = await serviceService.getServiceById(parseInt(serviceId))

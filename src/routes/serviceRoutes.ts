@@ -6,7 +6,7 @@ const router = Router()
 
 // Get all services (public)
 router.get('/', serviceController.getAllServices)
-
+router.get('/:serviceType', serviceController.getServiceByType)
 // Get service by ID (public)
 router.get('/:serviceId', serviceController.getServiceById)
 
