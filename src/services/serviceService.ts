@@ -21,7 +21,25 @@ class ServiceService {
 
     return result.recordset
   }
+  async getServiceByName(serviceType: string): Promise<Service | null> {
+    const connection = await getDbPool()
 
+    const result = await connection.request().input('type', serviceType).query(`
+        SELECT 
+          ServiceID,
+          ServiceName,
+          ServiceType,
+          Description,
+          Price,
+          SampleCount,
+          CreatedAt,
+          UpdatedAt
+        FROM Services 
+        WHERE ServiceType = @type 
+      `)
+
+    return result.recordset[0] || null
+  }
   async getServiceById(serviceId: number): Promise<Service | null> {
     const connection = await getDbPool()
 
