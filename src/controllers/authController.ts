@@ -5,7 +5,7 @@ import { getDbPool } from '../config/database'
 import { log } from 'console'
 
 export const registerHandler = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, password, confirmPassword } = req.body
+  const { email, password, confirmPassword, fullname, phoneNumber, address, dateOfBirth, signatureImage } = req.body
 
   // Kiểm tra các tham số đầu vào
   if (!email || !password || !confirmPassword) {
@@ -14,7 +14,16 @@ export const registerHandler = async (req: AuthRequest, res: Response): Promise<
   }
 
   try {
-    const user = await register(email, password, confirmPassword)
+    const user = await register(
+      email,
+      password,
+      confirmPassword,
+      fullname,
+      phoneNumber,
+      address,
+      dateOfBirth,
+      signatureImage
+    )
     if (!user) {
       res.status(409).json({ message: 'Email đã tồn tại' })
       return
@@ -38,7 +47,6 @@ export const loginHandler = async (req: AuthRequest, res: Response): Promise<voi
   }
 
   try {
-    
     const tokens = await login(email, password)
     if (!tokens) {
       res.status(401).json({ message: 'Thông tin đăng nhập không hợp lệ' })

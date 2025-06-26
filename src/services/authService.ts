@@ -3,7 +3,16 @@ import { getDbPool } from '../config/database'
 import jwt from 'jsonwebtoken'
 import { config } from '../config/config'
 
-export const register = async (email: string, password: string, confirmpassword: string) => {
+export const register = async (
+  email: string,
+  password: string,
+  confirmpassword: string,
+  fullname: string,
+  phoneNumber: string,
+  address: string,
+  dateOfBirth: string,
+  signatureImage: string
+) => {
   // Kiểm tra mật khẩu (độ dài 6-12 ký tự)
   const passwordregex = /^.{6,12}$/
   if (!passwordregex.test(password)) {
@@ -20,7 +29,10 @@ export const register = async (email: string, password: string, confirmpassword:
   if (!emailRegex.test(email)) {
     throw new Error('Email không hợp lệ')
   }
-
+  const phoneRegex = /^0\d{9}$/
+  if (!phoneRegex.test(phoneNumber)) {
+    throw new Error('Phone Number không hợp lệ')
+  }
   const pool = await getDbPool()
 
   // Kiểm tra nếu email đã tồn tại trong bảng Accounts
@@ -60,7 +72,17 @@ export const register = async (email: string, password: string, confirmpassword:
   // Lấy thông tin account vừa tạo
   const createdAccount = await pool.request().input('email', email).query(`
       SELECT * FROM Accounts WHERE Email = @email`)
-
+  await pool
+    .request()
+    .input('Acid', createdAccount.recordset[0].AccountID)
+    .input('name', fullname)
+    .input('Phone', phoneNumber)
+    .input('Address', address)
+    .input('DateOfBirth', dateOfBirth)
+    .input('SignatureImage', signatureImage)
+    .query(
+      'Insert into UserProfiles(AccountID,FullName,PhoneNumber,Address,DateOfBirth,SignatureImage) VALUES (@Acid,@name,@Phone,@Address,@DateOfBirth,@SignatureImage)'
+    )
   return createdAccount.recordset[0]
 }
 

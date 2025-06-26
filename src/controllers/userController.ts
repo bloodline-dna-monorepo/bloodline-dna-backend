@@ -6,9 +6,9 @@ import { AuthRequest } from '@/middlewares/authMiddleware'
 
 export const userController = {
   // Get current user profile
-  getProfile: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getProfile: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId
+      const userId = req.user?.accountId
 
       const profile = await userService.getUserProfile(userId)
       if (!profile) {

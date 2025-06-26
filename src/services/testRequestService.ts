@@ -27,7 +27,7 @@ class TestRequestService {
       .input('serviceId', data.serviceId)
       .input('collectionMethod', data.collectionMethod)
       .input('appointmentDate', data.appointmentDate || null)
-      .input('status', 'Pending').query(`
+      .input('status', 'Input Infor').query(`
         INSERT INTO TestRequests (
           AccountID, ServiceID, CollectionMethod, 
           Appointment, Status, CreatedAt, UpdatedAt
@@ -238,7 +238,7 @@ class TestRequestService {
     const connection = await getDbPool()
 
     // Insert or update test results
- 
+
     // Insert new results
     await connection
       .request()
@@ -314,6 +314,10 @@ class TestRequestService {
         Insert Into SampleCategorys(SampleType,TestRequestID,TesterName,CMND,YOB,Gender,Relationship) 
         Values (@SampleType,@testRequestId,@TesterName,@CMND,@YOB,@Gender,@Relationship)
       `)
+    await connection
+      .request()
+      .input('id', testRequestId)
+      .query(`UPDATE TestRequests SET Status = 'Pending' WHERE TestRequestID = @id `)
 
     return await this.getTestRequestById(testRequestId)
   }

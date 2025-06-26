@@ -36,6 +36,7 @@ class ServiceService {
           UpdatedAt
         FROM Services 
         WHERE ServiceType = @type 
+        Order By ServiceName DESC
       `)
 
     return result.recordset

@@ -4,7 +4,7 @@ import type { UserProfile } from '../types/type'
 
 export const userService = {
   // Get user profile by account ID
-  getUserProfile: async (accountId: number): Promise<UserProfile | null> => {
+  getUserProfile: async (accountId: number | undefined): Promise<UserProfile | null> => {
     try {
       const pool = await getDbPool()
       const result = await pool.request().input('accountId', accountId).query(`

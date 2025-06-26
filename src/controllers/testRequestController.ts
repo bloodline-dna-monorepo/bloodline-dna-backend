@@ -40,7 +40,7 @@ class TestRequestController {
       return
     }
 
-    res.status(200).json({ message: MESSAGES.TEST_REQUEST.TEST_REQUEST_RETRIEVED, testRequest })
+    res.status(200).json({ message: MESSAGES.TEST_REQUEST.TEST_REQUEST_RETRIEVED, data: testRequest })
     return
   })
 
@@ -128,7 +128,7 @@ class TestRequestController {
     //   result = await testRequestService.confirmSampleInfoByStaff(Number.parseInt(testRequestId), userId, sampleInfo)
     // }
     // res.status(200).json({ message: MESSAGES.TEST_REQUEST.SAMPLE_INFO_SUBMITTED, result })
-    return
+    res.status(200).json({ message: MESSAGES.TEST_REQUEST.SAMPLE_INFO_SUBMITTED, data: result })
   })
 
   getTestResults = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {

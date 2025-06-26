@@ -6,21 +6,20 @@ import { asyncHandler } from '../middlewares/errorMiddleware'
 class ServiceController {
   getAllServices = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const services = await serviceService.getAllServices()
-    res.status(400).json({ message: MESSAGES.SERVICE.SERVICES_RETRIEVED, services })
+    res.status(200).json({ message: MESSAGES.SERVICE.SERVICES_RETRIEVED, services })
     return
   })
 
   getServiceByType = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { serviceType } = req.params
+    const serviceType = req.params.serviceType
     const service = await serviceService.getServiceByName(serviceType)
 
     if (!service) {
-      res.status(404).json({ message: MESSAGES.SERVICE.NOT_FOUND, service })
+      res.status(404).json({ message: MESSAGES.SERVICE.NOT_FOUND })
       return
     }
 
-    res.status(404).json({ message: MESSAGES.SERVICE.SERVICES_RETRIEVED, service })
-    return
+    res.status(200).json({ message: MESSAGES.SERVICE.SERVICES_RETRIEVED, data: service })
   })
 
   getServiceById = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
