@@ -14,7 +14,7 @@ export const userController = {
       if (!profile) {
         throw createError(MESSAGES.ERROR.NOT_FOUND, 404, 'NOT_FOUND')
       }
-      res.status(200).json({ message: MESSAGES.PROFILE.PROFILE_RETRIEVED, profile })
+      res.status(200).json({ message: MESSAGES.PROFILE.PROFILE_RETRIEVED, data: profile })
       return
     } catch (error) {
       next(error)

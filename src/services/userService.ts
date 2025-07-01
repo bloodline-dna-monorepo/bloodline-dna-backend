@@ -10,7 +10,7 @@ export const userService = {
       const result = await pool.request().input('accountId', accountId).query(`
           SELECT up.*, a.Email as AccountEmail
           FROM UserProfiles up
-          INNER JOIN Accounts a ON up.AccountID = a.AccountID
+          JOIN Accounts a ON up.AccountID = a.AccountID
           WHERE up.AccountID = @accountId
         `)
 

@@ -36,12 +36,7 @@ router.post(
   testRequestController.createTestResultbyStaff
 )
 
-router.get(
-  '/viewCreateTestResult',
-  authenticate,
-  authorize(['Manager']),
-  testRequestController.viewCreateTestResult
-)
+router.get('/viewCreateTestResult', authenticate, authorize(['Manager']), testRequestController.viewCreateTestResult)
 router.put(
   '/:testResultId/verifyTestResult',
   authenticate,

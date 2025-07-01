@@ -79,7 +79,6 @@ export const createDefaultAdmin = async (): Promise<void> => {
       .input('passwordHash', hashedPassword)
       .input('roleId', 1).query(`
         INSERT INTO Accounts (Email, PasswordHash, RoleID, CreatedAt)
-        OUTPUT INSERTED.AccountID
         VALUES (@email, @passwordHash, @roleId, GETDATE())
       `)
 

@@ -119,7 +119,7 @@ export const login = async (email: string, password: string) => {
 }
 
 // Thời gian hết hạn của các token
-const ACCESS_TOKEN_EXPIRES_IN = '45m'
+const ACCESS_TOKEN_EXPIRES_IN = '1m'
 const REFRESH_TOKEN_EXPIRES_IN = 7 * 24 * 60 * 60 * 1000 // 7 ngày
 
 // Tạo interface cho payload của token
@@ -163,7 +163,7 @@ export const generateRefreshToken = async (payload: Payload): Promise<string> =>
 
 // Xác minh Refresh Token
 export const verifyRefreshToken = async (
-  token: string
+  refreshToken: string
 ): Promise<{ accountId: number; email: string; role: string } | null> => {
   const pool = await getDbPool()
 
@@ -171,8 +171,8 @@ export const verifyRefreshToken = async (
     // Kiểm tra nếu token tồn tại và chưa bị thu hồi
     const result = await pool
       .request()
-      .input('token', token)
-      .query('SELECT TOP 1 * FROM RefreshToken WHERE token = @token AND revoked = 0')
+      .input('token', refreshToken)
+      .query('SELECT TOP 1 * FROM RefreshTokens WHERE token = @token AND revoked = 0')
 
     if (result.recordset.length === 0) return null
 
@@ -183,7 +183,7 @@ export const verifyRefreshToken = async (
 
     // Giải mã token và lấy accountId
     // const decoded = jwt.verify(token, jwtSecret) as { accountId: number }
-    const decoded = jwt.verify(token, config.jwt.secret) as { accountId: number; email: string; role: string }
+    const decoded = jwt.verify(refreshToken, config.jwt.secret) as { accountId: number; email: string; role: string }
 
     // Lấy thông tin người dùng
     const userResult = await pool.request().input('accountId', decoded.accountId).query(`
