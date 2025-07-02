@@ -14,10 +14,7 @@ export const register = async (
   signatureImage: string
 ) => {
   // Kiểm tra mật khẩu (độ dài 6-12 ký tự)
-  const passwordregex = /^.{6,12}$/
-  if (!passwordregex.test(password)) {
-    throw new Error('Mật khẩu phải có độ dài từ 6 đến 12 ký tự')
-  }
+  
 
   // Kiểm tra mật khẩu trùng khớp
   if (password !== confirmpassword) {
@@ -25,14 +22,7 @@ export const register = async (
   }
 
   // Kiểm tra định dạng email
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/
-  if (!emailRegex.test(email)) {
-    throw new Error('Email không hợp lệ')
-  }
-  const phoneRegex = /^0\d{9}$/
-  if (!phoneRegex.test(phoneNumber)) {
-    throw new Error('Phone Number không hợp lệ')
-  }
+ 
   const pool = await getDbPool()
 
   // Kiểm tra nếu email đã tồn tại trong bảng Accounts

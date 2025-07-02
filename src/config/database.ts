@@ -81,8 +81,12 @@ export const createDefaultAdmin = async (): Promise<void> => {
         INSERT INTO Accounts (Email, PasswordHash, RoleID, CreatedAt)
         VALUES (@email, @passwordHash, @roleId, GETDATE())
       `)
+    const select = await dbPool
+      .request()
+      .input('email', config.admin.email)
+      .query('SELECT * FROM Accounts WHERE Email = @email')
 
-    const accountId = accountResult.recordset[0].AccountID
+    const accountId = select.recordset[0].AccountID
 
     // Create admin profile
     await dbPool

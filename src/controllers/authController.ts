@@ -5,24 +5,39 @@ import { getDbPool } from '../config/database'
 import { log } from 'console'
 
 export const registerHandler = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, password, confirmPassword, fullname, phoneNumber, address, dateOfBirth, signatureImage } = req.body
+  const { Email, PasswordHash, ConfirmPassword, FullName, PhoneNumber, Address, DateOfBirth, SignatureImage } = req.body
 
   // Kiểm tra các tham số đầu vào
-  if (!email || !password || !confirmPassword) {
+  if (!Email || !PasswordHash || !ConfirmPassword) {
     res.status(400).json({ message: 'Thiếu email hoặc mật khẩu' })
+    return
+  }
+  const passwordregex = /^.{6,12}$/
+  if (!passwordregex.test(PasswordHash)) {
+    res.status(400).json({ message: 'Mật khẩu phải có độ dài từ 6 đến 12 ký tự' })
+    return
+  }
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/
+  if (!emailRegex.test(Email)) {
+    res.status(400).json({ message: 'Email ko hợp lệ' })
+    return
+  }
+  const phoneRegex = /^0\d{9}$/
+  if (!phoneRegex.test(PhoneNumber)) {
+    res.status(400).json({ message: 'Phone Number không hợp lệ' })
     return
   }
 
   try {
     const user = await register(
-      email,
-      password,
-      confirmPassword,
-      fullname,
-      phoneNumber,
-      address,
-      dateOfBirth,
-      signatureImage
+      Email,
+      PasswordHash,
+      ConfirmPassword,
+      FullName,
+      PhoneNumber,
+      Address,
+      DateOfBirth,
+      SignatureImage
     )
     if (!user) {
       res.status(409).json({ message: 'Email đã tồn tại' })
@@ -39,15 +54,15 @@ export const registerHandler = async (req: AuthRequest, res: Response): Promise<
 }
 
 export const loginHandler = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, password } = req.body
+  const { Email, PasswordHash } = req.body
 
-  if (!email || !password) {
+  if (!Email || !PasswordHash) {
     res.status(400).json({ message: 'Thiếu email hoặc mật khẩu' })
     return
   }
 
   try {
-    const tokens = await login(email, password)
+    const tokens = await login(Email, PasswordHash)
     if (!tokens) {
       res.status(401).json({ message: 'Thông tin đăng nhập không hợp lệ' })
       return

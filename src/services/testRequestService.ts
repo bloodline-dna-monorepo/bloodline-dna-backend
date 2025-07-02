@@ -1,7 +1,6 @@
 import { connectToDatabase, getDbPool } from '../config/database'
 
 interface TestRequestData {
-  userId: number
   serviceId: number
   collectionMethod: string
   appointmentDate?: string
