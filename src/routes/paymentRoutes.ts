@@ -1,20 +1,18 @@
-// import { Router } from 'express'
-// import { paymentController } from '../controllers/paymentController'
-// import { authenticate, authorize } from '../middlewares/authMiddleware'
+import { Router } from 'express'
+import { paymentController } from '../controllers/paymentController'
+import { authenticate, authorize } from '../middlewares/authMiddleware'
 
-// const router = Router()
+const router = Router()
 
-// // Customer payment routes
-// router.post(
-//   '/checkout',
-//   authenticate,
-//   authorize(['Customer']),
+// Customer payment routes
+router.post(
+  '/checkout',
+  authenticate,
+  authorize(['Customer']),
 
-//   paymentController.createCheckout
-// )
+  paymentController.createCheckout
+)
 
-// router.post('/notify', paymentController.handlePaymentNotify)
+router.post('/verify', authenticate, paymentController.verifyPayment)
 
-// router.post('/verify', authenticate, validateRequest(paymentValidationRules.verify), paymentController.verifyPayment)
-
-// export { router as paymentRoutes }
+export { router as paymentRoutes }

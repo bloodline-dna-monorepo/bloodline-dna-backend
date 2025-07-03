@@ -15,7 +15,7 @@ const router = Router()
 router.post('/register', registerHandler)
 router.post('/login', loginHandler)
 router.post('/refresh-token', refreshAccessTokenHandler)
-router.post('/logout', logoutHandler)
+router.delete('/logout', authenticate, logoutHandler)
 
 // Protected routes
 router.get('/profile', authenticate, userController.getProfile)

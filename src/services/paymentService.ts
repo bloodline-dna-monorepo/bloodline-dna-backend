@@ -6,9 +6,7 @@ import { config } from '../config/config'
 interface PaymentCheckoutData {
   userId: number
   serviceId: number
-  collectionMethod: string
   appointmentDate?: string
-  appointmentTime?: string
 }
 
 class PaymentService {
@@ -22,39 +20,9 @@ class PaymentService {
     }
 
     // Validate collection method based on service type
-    if (service.serviceType === 'Administrative' && data.collectionMethod !== 'Facility') {
-      throw new Error('Administrative services only support facility collection')
-    }
-
-    // Create payment record
-    const result = await connection
-      .request()
-      .input('registrationId', null) // Will be set later when test request is created
-      .input('amount', service.price)
-      .input('paymentMethod', 'VNPay')
-      .input('paymentStatus', 'Pending')
-      .input('serviceId', data.serviceId)
-      .input('userId', data.userId)
-      .input('collectionMethod', data.collectionMethod)
-      .input('appointmentDate', data.appointmentDate || null)
-      .input('appointmentTime', data.appointmentTime || null).query(`
-        INSERT INTO Payments (
-          RegistrationID, Amount, PaymentMethod, PaymentStatus, 
-          TransactionID, PaymentDate, CreatedAt, UpdatedAt,
-          ServiceID, UserID, CollectionMethod, AppointmentDate, AppointmentTime
-        )
-        OUTPUT INSERTED.PaymentID
-        VALUES (
-          @registrationId, @amount, @paymentMethod, @paymentStatus,
-          NULL, NULL, GETDATE(), GETDATE(),
-          @serviceId, @userId, @collectionMethod, @appointmentDate, @appointmentTime
-        )
-      `)
-
-    const paymentId = result.recordset[0].PaymentID
 
     // Generate VNPay URL
-    const vnpayUrl = this.generateVNPayUrl(paymentId, service.price, service.serviceName)
+    const vnpayUrl = this.generateVNPayUrl(service.id, service.price, service.serviceName)
 
     return {
       paymentId,

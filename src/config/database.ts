@@ -89,13 +89,9 @@ export const createDefaultAdmin = async (): Promise<void> => {
     const accountId = select.recordset[0].AccountID
 
     // Create admin profile
-    await dbPool
-      .request()
-      .input('accountId', accountId)
-      .input('email', config.admin.email)
-      .input('fullName', 'System Administrator').query(`
-        INSERT INTO UserProfiles (AccountID, Email, FullName, CreatedAt, UpdatedAt)
-        VALUES (@accountId, @email, @fullName, GETDATE(), GETDATE())
+    await dbPool.request().input('accountId', accountId).input('fullName', 'System Administrator').query(`
+        INSERT INTO UserProfiles (AccountID, FullName, CreatedAt, UpdatedAt)
+        VALUES (@accountId, @fullName, GETDATE(), GETDATE())
       `)
 
     console.log('Default admin account created successfully')

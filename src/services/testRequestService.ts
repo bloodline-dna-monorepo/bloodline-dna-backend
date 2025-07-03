@@ -42,44 +42,44 @@ class TestRequestService {
     return await this.getTestRequestById(testRequestId)
   }
 
-  // async createTestRequestFromPayment(paymentId: number) {
-  //   const connection = await getDbPool()
+  async createTestRequestFromPayment(paymentId: number) {
+    const connection = await getDbPool()
 
-  //   // Get payment details
-  //   const paymentResult = await connection.request().input('paymentId', paymentId).query(`
-  //       SELECT UserID, ServiceID, CollectionMethod, AppointmentDate, AppointmentTime
-  //       FROM Payments
-  //       WHERE PaymentID = @paymentId AND PaymentStatus = 'Completed'
-  //     `)
+    // Get payment details
+    const paymentResult = await connection.request().input('paymentId', paymentId).query(`
+        SELECT UserID, ServiceID, CollectionMethod, AppointmentDate, AppointmentTime
+        FROM Payments
+        WHERE PaymentID = @paymentId AND PaymentStatus = 'Completed'
+      `)
 
-  //   if (paymentResult.recordset.length === 0) {
-  //     throw new Error('Payment not found or not completed')
-  //   }
+    if (paymentResult.recordset.length === 0) {
+      throw new Error('Payment not found or not completed')
+    }
 
-  //   const payment = paymentResult.recordset[0]
+    const payment = paymentResult.recordset[0]
 
-  //   // Check if test request already exists
-  //   const existingRequest = await connection
-  //     .request()
-  //     .input('paymentId', paymentId)
-  //     .query(`SELECT TestRequestID FROM TestRequests WHERE PaymentID = @paymentId`)
+    // Check if test request already exists
+    const existingRequest = await connection
+      .request()
+      .input('paymentId', paymentId)
+      .query(`SELECT TestRequestID FROM TestRequests WHERE PaymentID = @paymentId`)
 
-  //   if (existingRequest.recordset.length > 0) {
-  //     return existingRequest.recordset[0].TestRequestID
-  //   }
+    if (existingRequest.recordset.length > 0) {
+      return existingRequest.recordset[0].TestRequestID
+    }
 
-  //   // Create test request
-  //   const testRequestData = {
-  //     userId: payment.UserID,
-  //     serviceId: payment.ServiceID,
-  //     paymentId: paymentId,
-  //     collectionMethod: payment.CollectionMethod,
-  //     appointmentDate: payment.AppointmentDate,
-  //     appointmentTime: payment.AppointmentTime
-  //   }
+    // Create test request
+    const testRequestData = {
+      userId: payment.UserID,
+      serviceId: payment.ServiceID,
+      paymentId: paymentId,
+      collectionMethod: payment.CollectionMethod,
+      appointmentDate: payment.AppointmentDate,
+      appointmentTime: payment.AppointmentTime
+    }
 
-  //   return await this.createTestRequest(testRequestData)
-  // }
+    return await this.createTestRequest(testRequestData)
+  }
 
   async getAllTestRequests() {
     const connection = await getDbPool()
@@ -206,7 +206,7 @@ class TestRequestService {
 
     // Get sample information
     const sampleResult = await connection.request().input('testRequestId', testRequestId).query(`
-        SELECT * FROM SampleCategorys 
+        SELECT * FROM SampleCategories 
         WHERE TestRequestID = @testRequestId
       `)
 

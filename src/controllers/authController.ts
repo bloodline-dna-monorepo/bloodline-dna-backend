@@ -185,21 +185,14 @@ export const getCurrentUserInfo = async (req: AuthRequest, res: Response): Promi
 }
 
 // Add logout handler
-export const logoutHandler = async (req: Request, res: Response): Promise<void> => {
+export const logoutHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { refreshToken } = req.body
-
-    if (!refreshToken) {
-      res.status(400).json({ message: 'Thiếu refresh token' })
-      return
-    }
+    const id = req.user?.accountId
 
     // Revoke the refresh token in the database
     const pool = await getDbPool()
-    await pool.request().input('token', refreshToken).query(`
-        UPDATE RefreshToken
-        SET revoked = 1
-        WHERE token = @token
+    await pool.request().input('id', id).query(`
+        DELETE FROM RefreshTokens WHERE AccountID = @id
       `)
 
     res.json({ success: true, message: 'Đăng xuất thành công' })
