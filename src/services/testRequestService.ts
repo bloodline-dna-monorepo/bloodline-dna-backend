@@ -42,45 +42,6 @@ class TestRequestService {
     return await this.getTestRequestById(testRequestId)
   }
 
-  async createTestRequestFromPayment(paymentId: number) {
-    const connection = await getDbPool()
-
-    // Get payment details
-    const paymentResult = await connection.request().input('paymentId', paymentId).query(`
-        SELECT UserID, ServiceID, CollectionMethod, AppointmentDate, AppointmentTime
-        FROM Payments
-        WHERE PaymentID = @paymentId AND PaymentStatus = 'Completed'
-      `)
-
-    if (paymentResult.recordset.length === 0) {
-      throw new Error('Payment not found or not completed')
-    }
-
-    const payment = paymentResult.recordset[0]
-
-    // Check if test request already exists
-    const existingRequest = await connection
-      .request()
-      .input('paymentId', paymentId)
-      .query(`SELECT TestRequestID FROM TestRequests WHERE PaymentID = @paymentId`)
-
-    if (existingRequest.recordset.length > 0) {
-      return existingRequest.recordset[0].TestRequestID
-    }
-
-    // Create test request
-    const testRequestData = {
-      userId: payment.UserID,
-      serviceId: payment.ServiceID,
-      paymentId: paymentId,
-      collectionMethod: payment.CollectionMethod,
-      appointmentDate: payment.AppointmentDate,
-      appointmentTime: payment.AppointmentTime
-    }
-
-    return await this.createTestRequest(testRequestData)
-  }
-
   async getAllTestRequests() {
     const connection = await getDbPool()
 
@@ -143,7 +104,7 @@ class TestRequestService {
     const connection = await getDbPool()
 
     const result = await connection.request().input('id', AccountId).query(`
-        SELECT 
+       SELECT 
           tr.TestRequestID,
           tr.AccountID,
           tr.ServiceID,
@@ -156,12 +117,12 @@ class TestRequestService {
           s.ServiceType,
           s.Price,
           s.SampleCount,
-          up.FullName as CustomerName,
-          a.Email as CustomerEmail
+		  tr.AssignedTo,
+		 th.KitID
         FROM TestRequests tr
         INNER JOIN Services s ON tr.ServiceID = s.ServiceID
-        INNER JOIN Accounts a ON tr.AccountID = a.AccountID
-        LEFT JOIN UserProfiles up ON tr.AccountID = up.AccountID
+		Full JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID
+		full Join TestAtFacility tf on tr.TestRequestID = tr.TestRequestID
         WHERE tr.AccountID = @id
         ORDER BY tr.CreatedAt DESC
       `)
