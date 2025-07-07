@@ -20,5 +20,6 @@ router.delete('/logout', authenticate, logoutHandler)
 // Protected routes
 router.get('/profile', authenticate, userController.getProfile)
 router.put('/change-password', authenticate, PasswordChangeHandler)
+router.put('/profile', authenticate, userController.updateProfile)
 
 export default router

@@ -17,7 +17,7 @@ router.get('/', authenticate, authorize(['Staff']), testRequestController.getAll
 
 router.post('/', authenticate, authorize(['Customer']), testRequestController.createTestRequest)
 
-router.put(
+router.post(
   '/:testRequestId/submit-sample',
   authenticate,
   authorize(['Customer']),
