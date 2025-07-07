@@ -61,7 +61,7 @@ class ServiceService {
     return result.recordset[0] || null
   }
 
-  async createService(serviceData: any): Promise<Service> {
+  async createService(serviceData: Omit<Service, 'ServiceID' | 'CreatedAt' | 'UpdatedAt'>): Promise<Service> {
     const connection = await getDbPool()
 
     const result = await connection
@@ -149,6 +149,19 @@ class ServiceService {
 
     return result.rowsAffected[0] > 0
   }
+  //   async deleteService(serviceId: number): Promise<boolean> {
+  //   const connection = await getDbPool()
+
+  //   const result = await connection
+  //     .request()
+  //     .input("serviceId", serviceId)
+  //     .query(`
+  //       DELETE FROM Services 
+  //       WHERE ServiceID = @serviceId
+  //     `)
+
+  //   return result.rowsAffected[0] > 0
+  // }
 }
 
 export const serviceService = new ServiceService()

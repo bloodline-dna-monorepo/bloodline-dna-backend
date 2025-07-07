@@ -1,157 +1,262 @@
-// import { getDbPool } from '../config/database'
-// import { serviceService } from './serviceService'
-// import crypto from 'crypto'
-// import { config } from '../config/config'
+import crypto from 'crypto'
+import { config } from '../config/config'
+import { getDbPool } from '../config/database'
 
-// interface PaymentCheckoutData {
-//   userId: number
-//   serviceId: number
-//   appointmentDate?: string
-// }
+interface VNPayPaymentData {
+  amount: number
+  orderInfo: string
+  orderId: string
+  returnUrl: string
+  ipAddr: string
+}
 
-// class PaymentService {
-//   async createPaymentCheckout(data: PaymentCheckoutData) {
-//     const connection = await getDbPool()
+interface PaymentSession {
+  sessionId: string
+  userId: number
+  serviceId: number
+  collectionMethod: string
+  appointmentDate?: string
+  amount: number
+  createdAt: Date
+}
 
-//     // Get service details
-//     const service = await serviceService.getServiceById(data.serviceId)
-//     if (!service) {
-//       throw new Error('Service not found')
-//     }
+interface Service {
+  ServiceID: number
+  ServiceName: string
+  ServiceType: string
+  Description: string
+  Price: number
+  SampleCount: number
+  CollectionMethod: string
+  IsActive: boolean
+  CreatedAt: Date
+  UpdatedAt: Date
+}
 
-//     // Validate collection method based on service type
+interface TestRequest {
+  TestRequestID: number
+  AccountID: number
+  ServiceID: number
+  CollectionMethod: string
+  Appointment?: string
+  Status: string
+  CreatedAt: Date
+  UpdatedAt: Date
+  ServiceName: string
+  ServiceType: string
+  Price: number
+  SampleCount: number
+  Description: string
+}
 
-//     // Generate VNPay URL
-//     const vnpayUrl = this.generateVNPayUrl(service.id, service.price, service.serviceName)
+interface PaymentResponse {
+  success: boolean
+  message: string
+  data: {
+    paymentUrl: string
+    sessionId: string
+    service: Service
+  }
+}
 
-//     return {
-//       paymentUrl: vnpayUrl,
-//       amount: service.price,
-//       serviceName: service.serviceName
-//     }
-//   }
+interface PaymentReturnResponse {
+  success: boolean
+  message: string
+  data: {
+    testRequest?: TestRequest
+    transactionId?: string
+    paymentStatus: 'success' | 'failed'
+    responseCode?: string
+  }
+}
 
-//   private generateVNPayUrl(paymentId: number, amount: number, orderInfo: string): string {
-//     const date = new Date()
-//     const createDate = date
-//       .toISOString()
-//       .replace(/[-:]/g, '')
-//       .replace(/\.\d{3}Z/, '')
+interface PaymentSessionResponse {
+  success: boolean
+  data: {
+    session: PaymentSession
+    service: Service
+  }
+}
 
-//     let vnp_Params: any = {
-//       vnp_Version: '2.1.0',
-//       vnp_Command: 'pay',
-//       vnp_TmnCode: config.vnpay.tmnCode,
-//       vnp_Locale: 'vn',
-//       vnp_CurrCode: 'VND',
-//       vnp_TxnRef: paymentId.toString(),
-//       vnp_OrderInfo: orderInfo,
-//       vnp_OrderType: 'other',
-//       vnp_Amount: (amount * 100).toString(),
-//       vnp_ReturnUrl: config.vnpay.returnUrl,
-//       vnp_IpAddr: '127.0.0.1',
-//       vnp_CreateDate: createDate
-//     }
+class PaymentService {
+  private paymentSessions: Map<string, PaymentSession> = new Map()
 
-//     vnp_Params = this.sortObject(vnp_Params)
+  createPaymentSession(
+    userId: number,
+    serviceId: number,
+    collectionMethod: string,
+    appointmentDate?: string,
+    amount?: number
+  ): string {
+    const sessionId = crypto.randomUUID()
 
-//     const queryString = Object.keys(vnp_Params)
-//       .map((key) => `${key}=${encodeURIComponent(vnp_Params[key])}`)
-//       .join('&')
+    const session: PaymentSession = {
+      sessionId,
+      userId,
+      serviceId,
+      collectionMethod,
+      appointmentDate,
+      amount: amount || 0,
+      createdAt: new Date()
+    }
 
-//     const hmac = crypto.createHmac('sha512', config.vnpay.hashSecret)
-//     const signed = hmac.update(Buffer.from(queryString, 'utf-8')).digest('hex')
-//     vnp_Params['vnp_SecureHash'] = signed
+    this.paymentSessions.set(sessionId, session)
 
-//     const finalQuery = Object.keys(vnp_Params)
-//       .map((key) => `${key}=${encodeURIComponent(vnp_Params[key])}`)
-//       .join('&')
+    // Clean up old sessions (older than 30 minutes)
+    this.cleanupOldSessions()
 
-//     return config.vnpay.url + '?' + finalQuery
-//   }
+    return sessionId
+  }
 
-//   verifyVNPaySignature(vnpayData: any): boolean {
-//     const secureHash = vnpayData.vnp_SecureHash
-//     delete vnpayData.vnp_SecureHash
-//     delete vnpayData.vnp_SecureHashType
+  getPaymentSession(sessionId: string): PaymentSession | null {
+    return this.paymentSessions.get(sessionId) || null
+  }
 
-//     const sortedParams = this.sortObject(vnpayData)
-//     const queryString = Object.keys(sortedParams)
-//       .map((key) => `${key}=${sortedParams[key]}`)
-//       .join('&')
+  removePaymentSession(sessionId: string): void {
+    this.paymentSessions.delete(sessionId)
+  }
 
-//     const hmac = crypto.createHmac('sha512', config.vnpay.hashSecret)
-//     const checkSum = hmac.update(Buffer.from(queryString, 'utf-8')).digest('hex')
+  private cleanupOldSessions(): void {
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
 
-//     return secureHash === checkSum
-//   }
+    for (const [sessionId, session] of this.paymentSessions.entries()) {
+      if (session.createdAt < thirtyMinutesAgo) {
+        this.paymentSessions.delete(sessionId)
+      }
+    }
+  }
 
-//   async updatePaymentStatus(vnpayData: any) {
-//     const connection = await getDbPool()
+  createVNPayPaymentUrl(paymentData: VNPayPaymentData): string {
+    const vnp_TmnCode = config.vnpay.tmnCode
+    const vnp_HashSecret = config.vnpay.hashSecret
+    const vnp_Url = config.vnpay.url
 
-//     const paymentId = Number.parseInt(vnpayData.vnp_TxnRef)
-//     const responseCode = vnpayData.vnp_ResponseCode
-//     const transactionNo = vnpayData.vnp_TransactionNo
+    const vnp_Params: Record<string, string> = {
+      vnp_Version: '2.1.0',
+      vnp_Command: 'pay',
+      vnp_TmnCode: vnp_TmnCode,
+      vnp_Locale: 'vn',
+      vnp_CurrCode: 'VND',
+      vnp_TxnRef: paymentData.orderId,
+      vnp_OrderInfo: paymentData.orderInfo,
+      vnp_OrderType: 'other',
+      vnp_Amount: (paymentData.amount * 100).toString(), // VNPay yêu cầu số tiền tính bằng xu
+      vnp_ReturnUrl: paymentData.returnUrl,
+      vnp_IpAddr: paymentData.ipAddr,
+      vnp_CreateDate: this.formatDate(new Date())
+    }
 
-//     const status = responseCode === '00' ? 'Completed' : 'Failed'
+    // Sắp xếp các tham số
+    const sortedParams = Object.keys(vnp_Params).sort()
 
-//     const result = await connection
-//       .request()
-//       .input('paymentId', paymentId)
-//       .input('status', status)
-//       .input('transactionId', transactionNo).query(`
-//         UPDATE Payments
-//         SET PaymentStatus = @status,
-//             TransactionID = @transactionId,
-//             PaymentDate = GETDATE(),
-//             UpdatedAt = GETDATE()
-//         OUTPUT INSERTED.*
-//         WHERE PaymentID = @paymentId
-//       `)
+    // Tạo chuỗi tham số
+    const signData = sortedParams.map((key) => `${key}=${encodeURIComponent(vnp_Params[key])}`).join('&')
 
-//     return result.recordset[0]
-//   }
+    // Tạo chuỗi băm bảo mật
+    const hmac = crypto.createHmac('sha512', vnp_HashSecret)
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex')
 
-//   async getPaymentById(paymentId: number, userId?: number) {
-//     const connection = await getDbPool()
+    // Thêm mã băm vào tham số
+    vnp_Params.vnp_SecureHash = signed
 
-//     let query = `
-//       SELECT
-//         p.PaymentID,
-//         p.Amount,
-//         p.PaymentStatus,
-//         p.PaymentMethod,
-//         p.TransactionID,
-//         p.PaymentDate,
-//         p.CollectionMethod,
-//         p.AppointmentDate,
-//         p.AppointmentTime,
-//         s.ServiceName,
-//         s.ServiceType
-//       FROM Payments p
-//       INNER JOIN Services s ON p.ServiceID = s.ServiceID
-//       WHERE p.PaymentID = @paymentId
-//     `
+    // Tạo URL cuối cùng
+    const finalParams = Object.keys(vnp_Params)
+      .map((key) => `${key}=${encodeURIComponent(vnp_Params[key])}`)
+      .join('&')
 
-//     const request = connection.request().input('paymentId', paymentId)
+    return `${vnp_Url}?${finalParams}`
+  }
 
-//     if (userId) {
-//       query += ' AND p.UserID = @userId'
-//       request.input('userId', userId)
-//     }
+  verifyVNPayReturn(vnpParams: Record<string, string>): boolean {
+    const vnp_HashSecret = config.vnpay.hashSecret
+    const secureHash = vnpParams.vnp_SecureHash
 
-//     const result = await request.query(query)
-//     return result.recordset[0]
-//   }
+    // Xóa mã băm khỏi tham số
+    delete vnpParams.vnp_SecureHash
+    delete vnpParams.vnp_SecureHashType
 
-//   private sortObject(obj: any) {
-//     const sorted: any = {}
-//     const keys = Object.keys(obj).sort()
-//     keys.forEach((key) => {
-//       sorted[key] = obj[key]
-//     })
-//     return sorted
-//   }
-// }
+    // Sắp xếp các tham số
+    const sortedParams = Object.keys(vnpParams).sort()
 
-// export const paymentService = new PaymentService()
+    // Tạo chuỗi băm dữ liệu
+    const signData = sortedParams.map((key) => `${key}=${vnpParams[key]}`).join('&')
+
+    // Tạo chuỗi băm bảo mật
+    const hmac = crypto.createHmac('sha512', vnp_HashSecret)
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex')
+
+    return signed === secureHash
+  }
+
+  async processSuccessfulPayment(sessionId: string, vnpTransactionId: string): Promise<TestRequest> {
+    const session = this.getPaymentSession(sessionId)
+
+    if (!session) {
+      throw new Error('Payment session not found')
+    }
+
+    const connection = await getDbPool()
+
+    try {
+      // Create test request
+      const result = await connection
+        .request()
+        .input('userId', session.userId)
+        .input('serviceId', session.serviceId)
+        .input('collectionMethod', session.collectionMethod)
+        .input('appointmentDate', session.appointmentDate || null)
+        .input('status', 'Input Infor').query(`
+          INSERT INTO TestRequests (
+            AccountID, ServiceID, CollectionMethod,
+            Appointment, Status, CreatedAt, UpdatedAt
+          )
+          OUTPUT INSERTED.TestRequestID
+          VALUES (
+            @userId, @serviceId, @collectionMethod,
+            @appointmentDate, @status, GETDATE(), GETDATE()
+          )
+        `)
+
+      const testRequestId = result.recordset[0].TestRequestID
+
+      const testRequestResult = await connection.request().input('testRequestId', testRequestId).query(`
+          SELECT
+            tr.TestRequestID,
+            tr.AccountID,
+            tr.ServiceID,
+            tr.CollectionMethod,
+            tr.Appointment,
+            tr.Status,
+            tr.CreatedAt,
+            s.ServiceName,
+            s.ServiceType,
+            s.Price,
+            s.SampleCount,
+            s.Description
+          FROM TestRequests tr
+          INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+          WHERE tr.TestRequestID = @testRequestId
+        `)
+
+      this.removePaymentSession(sessionId)
+
+      return testRequestResult.recordset[0]
+    } catch (error) {
+      console.error('Error processing payment:', error)
+      throw error
+    }
+  }
+
+  private formatDate(date: Date): string {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+
+    return `${year}${month}${day}${hours}${minutes}${seconds}`
+  }
+}
+
+export const paymentService = new PaymentService()

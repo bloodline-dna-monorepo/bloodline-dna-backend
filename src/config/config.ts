@@ -28,10 +28,11 @@ export const config = {
   },
 
   vnpay: {
-    tmnCode: process.env.VNP_TMN_CODE || '',
-    hashSecret: process.env.VNP_HASH_SECRET || '',
+    tmnCode: process.env.VNP_TMN_CODE || 'E9ESS6PO',
+    hashSecret: process.env.VNP_HASH_SECRET || 'ILA5CZ4MA3PX5P6DEB1ZWFOEW6ZRPFKR',
     url: process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
-    returnUrl: process.env.VNP_RETURN_URL || 'http://localhost:3000/payment/return'
+    returnUrl: process.env.VNP_RETURN_URL || 'http://localhost:3000/payment/return',
+    ipnUrl: process.env.VNP_IPN_URL || 'http://localhost:5000/api/payment/vnpay-ipn'
   },
 
   email: {

@@ -1,18 +1,16 @@
-// import { Router } from 'express'
-// import { paymentController } from '../controllers/paymentController'
-// import { authenticate, authorize } from '../middlewares/authMiddleware'
+import { Router } from 'express'
+import { paymentController } from '../controllers/paymentController'
+import { authenticate, authorize } from '../middlewares/authMiddleware'
 
-// const router = Router()
+const router = Router()
 
-// // Customer payment routes
-// router.post(
-//   '/checkout',
-//   authenticate,
-//   authorize(['Customer']),
+// Create payment
+router.post('/create', authenticate, authorize(['Customer']), paymentController.createPayment)
 
-//   paymentController.createCheckout
-// )
+// VNPay return URL
+router.get('/vnpay-return', paymentController.handleVNPayReturn)
 
-// router.post('/verify', authenticate, paymentController.verifyPayment)
+// Get payment session
+router.get('/session/:sessionId', paymentController.getPaymentSession)
 
-// export { router as paymentRoutes }
+export default router

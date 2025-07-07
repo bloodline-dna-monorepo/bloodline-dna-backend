@@ -73,18 +73,18 @@ export interface RefreshToken {
   CreatedAt: Date
 }
 
-// Interface cho Payment
-export interface Payment {
-  PaymentID: number
-  RegistrationID: number
-  Amount: number
-  PaymentMethod: string
-  PaymentStatus: PaymentStatus
-  TransactionID: string | null
-  PaymentDate: Date
-  CreatedAt: Date
-  UpdatedAt: Date
-}
+// // Interface cho Payment
+// export interface Payment {
+//   PaymentID: number
+//   RegistrationID: number
+//   Amount: number
+//   PaymentMethod: string
+//   PaymentStatus: PaymentStatus
+//   TransactionID: string | null
+//   PaymentDate: Date
+//   CreatedAt: Date
+//   UpdatedAt: Date
+// }
 
 // Interface cho LoginRequest
 export interface LoginRequest {
@@ -113,7 +113,7 @@ interface Service {
   price: number
   description: string
   sampleCount: 2 | 3
-  collectionMethods: string[]
+  collectionMethod: 'Home' | 'Facility'
   isActive: boolean
   createdAt: Date
   updatedAt: Date
