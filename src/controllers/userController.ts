@@ -22,16 +22,17 @@ export const userController = {
   },
 
   // Update user profile
-  updateProfile: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateProfile: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId
+      const userId = req.user?.accountId
       const updateData = req.body
 
       const updatedProfile = await userService.updateUserProfile(userId, updateData)
       res.status(200).json({ message: MESSAGES.PROFILE.UPDATE_SUCCESS, updatedProfile })
       return
     } catch (error) {
-      next(error)
+      res.status(500).json({ message: MESSAGES.ERROR.SERVER_ERROR })
+      return
     }
   },
 

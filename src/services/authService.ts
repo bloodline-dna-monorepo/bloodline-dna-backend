@@ -14,7 +14,6 @@ export const register = async (
   signatureImage: string
 ) => {
   // Kiểm tra mật khẩu (độ dài 6-12 ký tự)
-  
 
   // Kiểm tra mật khẩu trùng khớp
   if (password !== confirmpassword) {
@@ -22,7 +21,7 @@ export const register = async (
   }
 
   // Kiểm tra định dạng email
- 
+
   const pool = await getDbPool()
 
   // Kiểm tra nếu email đã tồn tại trong bảng Accounts
@@ -217,7 +216,7 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
   const Result = await pool
     .request()
     .input('userId', userId)
-    .query('SELECT password, email FROM Accounts WHERE AccountID = @userId') // Chỉnh lại id thành AccountID
+    .query('SELECT PasswordHash, Email FROM Accounts WHERE AccountID = @userId') // Chỉnh lại id thành AccountID
 
   if (Result.recordset.length === 0) {
     throw new Error('Account not found')
@@ -226,7 +225,7 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
   const user = Result.recordset[0]
 
   // Kiểm tra mật khẩu cũ có chính xác không
-  const match = await bcrypt.compare(password, user.password) // Sử dụng await để chờ kết quả
+  const match = await bcrypt.compare(password, user.PasswordHash) // Sử dụng await để chờ kết quả
   if (!match) {
     throw new Error('Old password is wrong')
   }
@@ -251,7 +250,7 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
       .request()
       .input('userId', userId)
       .input('newPasswordHash', newPasswordHash)
-      .query('UPDATE Accounts SET password = @newPasswordHash WHERE AccountID = @userId')
+      .query('UPDATE Accounts SET PasswordHash = @newPasswordHash WHERE AccountID = @userId')
 
     return { message: 'Password change is successful' }
   } catch (error: unknown) {

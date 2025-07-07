@@ -166,12 +166,12 @@ class TestRequestService {
     const testRequest = result.recordset[0]
 
     // Get sample information
-    const sampleResult = await connection.request().input('testRequestId', testRequestId).query(`
-        SELECT * FROM SampleCategories 
-        WHERE TestRequestID = @testRequestId
-      `)
+    // const sampleResult = await connection.request().input('testRequestId', testRequestId).query(`
+    //     SELECT * FROM SampleCategories
+    //     WHERE TestRequestID = @testRequestId
+    //   `)
 
-    testRequest.sampleInformation = sampleResult.recordset
+    // testRequest.sampleInformation = sampleResult.recordset
 
     return testRequest
   }
@@ -250,13 +250,14 @@ class TestRequestService {
     CMND: string,
     YOB: number,
     Gender: string,
-    Relationship: string
+    Relationship: string,
+    File: string
   ) {
     const connection = await getDbPool()
 
     // Verify customer owns this test request
     const testRequest = await this.getTestRequestById(testRequestId)
-    if (!testRequest || testRequest.UserID !== userId) {
+    if (!testRequest || testRequest.AccountID !== userId) {
       throw new Error('Unauthorized access to test request')
     }
 
@@ -270,9 +271,10 @@ class TestRequestService {
       .input('CMND', CMND)
       .input('YOB', YOB)
       .input('Gender', Gender)
-      .input('Relationship', Relationship).query(`
-        Insert Into SampleCategorys(SampleType,TestRequestID,TesterName,CMND,YOB,Gender,Relationship) 
-        Values (@SampleType,@testRequestId,@TesterName,@CMND,@YOB,@Gender,@Relationship)
+      .input('Relationship', Relationship)
+      .input('file', File).query(`
+        Insert Into SampleCategories(SampleType,TestRequestID,TesterName,CMND,YOB,Gender,Relationship,SignatureImage) 
+        Values (@SampleType,@testRequestId,@TesterName,@CMND,@YOB,@Gender,@Relationship,@file)
       `)
     await connection
       .request()

@@ -27,43 +27,30 @@ export const userService = {
   },
 
   // Update user profile
-  updateUserProfile: async (accountId: number, updateData: Partial<UserProfile>): Promise<UserProfile> => {
+  updateUserProfile: async (accountId: number | undefined, updateData: Partial<UserProfile>): Promise<UserProfile> => {
     try {
       const pool = await getDbPool()
 
-      const { FullName, Email, PhoneNumber, Address, DateOfBirth } = updateData
+      const { FullName, PhoneNumber, Address, DateOfBirth } = updateData
 
       // Build dynamic update query
-      const updateFields: string[] = []
-      const request = pool.request().input('accountId', accountId)
 
-      if (FullName !== undefined) {
-        updateFields.push('FullName = @fullName')
-        request.input('fullName', FullName)
-      }
-      if (PhoneNumber !== undefined) {
-        updateFields.push('PhoneNumber = @phoneNumber')
-        request.input('phoneNumber', PhoneNumber)
-      }
-      if (Address !== undefined) {
-        updateFields.push('Address = @address')
-        request.input('address', Address)
-      }
-      if (DateOfBirth !== undefined) {
-        updateFields.push('DateOfBirth = @dateOfBirth')
-        request.input('dateOfBirth', DateOfBirth)
-      }
+      const request = pool
+        .request()
+        .input('accountId', accountId)
 
-      if (updateFields.length > 0) {
-        updateFields.push('UpdatedAt = GETDATE()')
+        .input('fullName', FullName)
 
-        await request.query(`
+        .input('phoneNumber', PhoneNumber)
+
+        .input('address', Address)
+        .input('dateOfBirth', DateOfBirth)
+
+      await request.query(`
           UPDATE UserProfiles 
-          SET ${updateFields.join(', ')}
+          SET Fullname = @fullname, Address =@address, PhoneNumber = @phonenumber, DateOfBirth = @dateOfBirth
           WHERE AccountID = @accountId
         `)
-      }
-
       // Return updated profile
       const updatedProfile = await userService.getUserProfile(accountId)
       return updatedProfile!

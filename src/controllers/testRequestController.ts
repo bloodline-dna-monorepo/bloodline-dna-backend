@@ -107,30 +107,26 @@ class TestRequestController {
     return
   })
 
-  submitSampleInfo = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  submitSampleInfo = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { testRequestId } = req.params
     const userId = req.user?.accountId
-    const { SampleType, TesterName, CMND, YOB, Gender, Relationship } = req.body
 
-    // Customer
+    const { SampleType, TesterName, CMND, YOB, Gender, Relationship, File } = req.body
+
     const result = await testRequestService.submitSampleInfoByCustomer(
-      Number.parseInt(testRequestId),
+      Number(testRequestId),
       userId,
       SampleType,
       TesterName,
       CMND,
       YOB,
       Gender,
-      Relationship
+      Relationship,
+      File // truyền file nếu cần
     )
-    // } else if (userRole === 'Staff') {
-    //   // Staff
-    //   result = await testRequestService.confirmSampleInfoByStaff(Number.parseInt(testRequestId), userId, sampleInfo)
-    // }
-    // res.status(200).json({ message: MESSAGES.TEST_REQUEST.SAMPLE_INFO_SUBMITTED, result })
+
     res.status(200).json({ message: MESSAGES.TEST_REQUEST.SAMPLE_INFO_SUBMITTED, data: result })
   })
-
   getTestResults = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { testRequestId } = req.params
 
