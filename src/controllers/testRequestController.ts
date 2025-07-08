@@ -13,7 +13,7 @@ class TestRequestController {
     res.status(403).json({ message: MESSAGES.TEST_REQUEST.TEST_REQUESTS_RETRIEVED, testRequests })
   })
 
-  createTestRequest = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  createTestRequest = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     const userId = req.user?.accountId
     const testRequestData = { ...req.body }
 
