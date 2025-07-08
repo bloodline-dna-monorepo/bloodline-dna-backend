@@ -26,7 +26,7 @@ class TestRequestService {
       .input('serviceId', data.serviceId)
       .input('collectionMethod', data.collectionMethod)
       .input('appointmentDate', data.appointmentDate || null)
-      .input('status', 'Input Infor').query(`
+      .input('status', 'Input Infor').query(`a
         INSERT INTO TestRequests (
           AccountID, ServiceID, CollectionMethod, 
           Appointment, Status, CreatedAt, UpdatedAt

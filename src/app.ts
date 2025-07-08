@@ -15,7 +15,8 @@ import adminRoute from './routes/adminRoute'
 import morgan from 'morgan'
 import { serviceRoutes } from './routes/serviceRoutes'
 import { testRequestRoutes } from './routes/testRequestRoutes'
-import paymentRoutes from './routes/paymentRoutes'
+import { paymentRoutes } from './routes/paymentRoutes'
+
 
 const app = express()
 
@@ -80,7 +81,7 @@ app.use('/api/users', userRoutes)
 // app.use("/api/services", serviceRoutes)
 app.use('/api/admin', adminRoute)
 app.use('/api/services', serviceRoutes)
-app.use('/api/payment', paymentRoutes)
+app.use('/api/payments', paymentRoutes)
 app.use('/api/test-requests', testRequestRoutes)
 // 404 handler
 app.use('*', (req, res) => {
