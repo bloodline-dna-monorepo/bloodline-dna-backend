@@ -11,12 +11,13 @@ import { errorMiddleware } from './middlewares/errorMiddleware'
 // Import routes
 import authRoutes from './routes/authRoutes'
 import userRoutes from './routes/userRoutes'
-import adminRoute from './routes/adminRoute'
+
 import morgan from 'morgan'
 import { serviceRoutes } from './routes/serviceRoutes'
 import { testRequestRoutes } from './routes/testRequestRoutes'
 import { paymentRoutes } from './routes/paymentRoutes'
-
+import { managerRoutes } from './routes/managerRoutes'
+import { adminRoutes } from './routes/adminRoutes'
 
 const app = express()
 
@@ -79,10 +80,11 @@ if (config.nodeEnv === 'development') {
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 // app.use("/api/services", serviceRoutes)
-app.use('/api/admin', adminRoute)
+app.use('/api/admin', adminRoutes)
 app.use('/api/services', serviceRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api/test-requests', testRequestRoutes)
+app.use('/api/manager', managerRoutes)
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({

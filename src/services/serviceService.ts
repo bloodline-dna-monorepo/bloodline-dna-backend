@@ -66,11 +66,11 @@ class ServiceService {
 
     const result = await connection
       .request()
-      .input('serviceName', serviceData.serviceName)
-      .input('serviceType', serviceData.serviceType)
-      .input('description', serviceData.description)
-      .input('price', serviceData.price)
-      .input('sampleCount', serviceData.sampleCount)
+      .input('serviceName', serviceData.ServiceName)
+      .input('serviceType', serviceData.ServiceType)
+      .input('description', serviceData.Description)
+      .input('price', serviceData.Price)
+      .input('sampleCount', serviceData.SampleCount)
       .input('collectionMethod', serviceData.collectionMethod).query(`
         INSERT INTO Services (
           ServiceName, ServiceType, Description, Price, 
@@ -156,7 +156,7 @@ class ServiceService {
   //     .request()
   //     .input("serviceId", serviceId)
   //     .query(`
-  //       DELETE FROM Services 
+  //       DELETE FROM Services
   //       WHERE ServiceID = @serviceId
   //     `)
 

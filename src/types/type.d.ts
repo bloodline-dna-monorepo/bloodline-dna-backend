@@ -108,11 +108,11 @@ export interface ChangePasswordRequest {
 
 interface Service {
   id: number
-  serviceName: string
-  serviceType: 'Administrative' | 'Civil'
-  price: number
-  description: string
-  sampleCount: 2 | 3
+  ServiceName: string
+  ServiceType: 'Administrative' | 'Civil'
+  Price: number
+  Description: string
+  SampleCount: 2 | 3
   collectionMethod: 'Home' | 'Facility'
   isActive: boolean
   createdAt: Date
@@ -171,4 +171,25 @@ interface TestResult {
   results: string
   enteredBy: number
   enteredAt: Date
+}
+
+export interface User {
+  accountId: number
+  name: string
+  email: string
+  role: string
+  phoneNumber: string
+}
+
+export interface DashboardStats {
+  totalUsers: number
+  totalTests: number
+  totalServices: number
+  revenue: number
+  avgRating: number
+  completed: number
+  pending: number
+  feedback: number
+  monthlyRevenue: number[]
+  serviceDistribution: number[]
 }
