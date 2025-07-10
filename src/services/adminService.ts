@@ -70,6 +70,34 @@ class AdminService {
       throw error
     }
   }
+  // Get user by ID with full details
+  async getUserById(accountId: number) {
+    const pool = await getDbPool()
+
+    try {
+      const result = await pool.request().input('accountId', accountId).query(`
+        SELECT 
+          a.AccountID as accountId,
+          up.FullName as name,
+          a.Email as email,
+          r.RoleName as role,
+          up.PhoneNumber
+        FROM Accounts a
+        LEFT JOIN UserProfiles up ON a.AccountID = up.AccountID
+        JOIN Roles r ON a.RoleID = r.RoleID  WHERE a.AccountID = @accountId
+      `)
+
+      if (result.recordset.length === 0) {
+        throw new Error('User not found')
+      }
+
+      const record = result.recordset[0]
+      return record
+    } catch (error) {
+      console.error('Error getting user by ID:', error)
+      throw error
+    }
+  }
 
   // User Management
   async getAllUsers(search?: string): Promise<User[]> {

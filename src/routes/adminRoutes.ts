@@ -14,6 +14,7 @@ router.get('/dashboard', authenticate, adminController.getDashboardStats)
 // User Management
 router.get('/users', authenticate, adminController.getAllUsers)
 router.put('/users/:userId/role', authenticate, adminController.updateUserRole)
+router.get('/users/:userId', authenticate, adminController.getUserById)
 router.delete('/users/:userId', authenticate, adminController.deleteUser)
 
 // Service Management

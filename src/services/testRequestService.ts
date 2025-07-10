@@ -26,7 +26,7 @@ class TestRequestService {
       .input('serviceId', data.serviceId)
       .input('collectionMethod', data.collectionMethod)
       .input('appointmentDate', data.appointmentDate || null)
-      .input('status', 'Input Infor').query(`a
+      .input('status', 'Input Infor').query(`
         INSERT INTO TestRequests (
           AccountID, ServiceID, CollectionMethod, 
           Appointment, Status, CreatedAt, UpdatedAt
@@ -105,26 +105,26 @@ class TestRequestService {
 
     const result = await connection.request().input('id', AccountId).query(`
        SELECT 
-          tr.TestRequestID,
-          tr.AccountID,
-          tr.ServiceID,
-          tr.CollectionMethod,
-          tr.Appointment,
-          tr.Status,
-          tr.CreatedAt,
-          tr.UpdatedAt,
-          s.ServiceName,
-          s.ServiceType,
-          s.Price,
-          s.SampleCount,
-		  tr.AssignedTo,
-		 th.KitID
-        FROM TestRequests tr
-        INNER JOIN Services s ON tr.ServiceID = s.ServiceID
-		Full JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID
-		full Join TestAtFacility tf on tr.TestRequestID = tr.TestRequestID
-        WHERE tr.AccountID = @id
-        ORDER BY tr.CreatedAt DESC
+  tr.TestRequestID,
+  tr.AccountID,
+  tr.ServiceID,
+  tr.CollectionMethod,
+  tr.Appointment,
+  tr.Status,
+  tr.CreatedAt,
+  tr.UpdatedAt,
+  s.ServiceName,
+  s.ServiceType,
+  s.Price,
+  s.SampleCount,
+  tr.AssignedTo,
+  th.KitID
+FROM TestRequests tr
+INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+LEFT JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID AND tr.CollectionMethod = 'Home'
+LEFT JOIN TestAtFacility tf ON tr.TestRequestID = tf.TestRequestID AND tr.CollectionMethod = 'Facility'
+WHERE tr.AccountID = @id
+ORDER BY tr.CreatedAt DESC
       `)
 
     return result.recordset

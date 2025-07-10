@@ -211,7 +211,7 @@ class TestRequestController {
         } else {
           res.status(500).json({ message: 'An unknown error occurred' })
         }
-      }
+      } 
     }
   )
   viewCreateTestResult = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {

@@ -18,6 +18,7 @@ import { testRequestRoutes } from './routes/testRequestRoutes'
 import { paymentRoutes } from './routes/paymentRoutes'
 import { managerRoutes } from './routes/managerRoutes'
 import { adminRoutes } from './routes/adminRoutes'
+import { staffRoutes } from './routes/staffRoutes'
 
 const app = express()
 
@@ -85,6 +86,7 @@ app.use('/api/services', serviceRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api/test-requests', testRequestRoutes)
 app.use('/api/manager', managerRoutes)
+app.use('/api/staff', staffRoutes)
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({

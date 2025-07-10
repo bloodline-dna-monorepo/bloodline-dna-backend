@@ -93,8 +93,7 @@ class ManagerService {
         SUM(s.Price) as revenue
       FROM TestRequests tr
       JOIN Services s ON tr.ServiceID = s.ServiceID
-      WHERE tr.Status = 'Completed' 
-        AND tr.CreatedAt >= DATEADD(month, -6, GETDATE())
+      WHERE tr.CreatedAt >= DATEADD(month, -6, GETDATE())
       GROUP BY MONTH(tr.CreatedAt)
       ORDER BY MONTH(tr.CreatedAt)
     `)
@@ -141,6 +140,7 @@ class ManagerService {
       JOIN Accounts a ON tr.AccountID = a.AccountID
       JOIN UserProfiles up ON a.AccountID = up.AccountID
       LEFT JOIN UserProfiles staff ON tr_result.EnterBy = staff.AccountID
+      Where tr_result.Status = 'Pending'
       ORDER BY tr_result.EnterDate DESC
     `)
 
@@ -180,7 +180,7 @@ class ManagerService {
         UPDATE TestResults 
         SET Status = 'Verified', 
             ConfirmBy = @managerId,
-            ConfirmedAt = GETDATE()
+            ConfirmDate = GETDATE()
         WHERE TestResultID = @testResultId
       `)
 
@@ -211,7 +211,7 @@ class ManagerService {
         UPDATE TestResults 
         SET Status = 'Rejected', 
             ConfirmBy = @managerId,
-            ConfirmedAt = GETDATE()
+            ConfirmDate = GETDATE()
         WHERE TestResultID = @testResultId
       `)
 

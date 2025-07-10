@@ -193,3 +193,40 @@ export interface DashboardStats {
   monthlyRevenue: number[]
   serviceDistribution: number[]
 }
+
+export interface StaffDashboardStats {
+  totalRequests: number
+  pendingRequests: number
+  completedRequests: number
+  totalCustomers: number
+  completionRate: number
+}
+
+export interface TestRequestDetail {
+  TestRequestID: number
+  AccountID: number
+  ServiceID: number
+  CollectionMethod: string
+  Appointment: string | null
+  Status: string
+  CreatedAt: string
+  UpdatedAt: string
+  AssignedTo: number | null
+  ServiceName: string
+  ServiceType: string
+  Price: number
+  SampleCount: number
+  CustomerName: string
+  CustomerEmail: string
+  CustomerPhone: string | null
+  CustomerAddress: string | null
+  TestSubjects: string
+  KitID: string | null
+}
+
+export interface RecentRequest {
+  TestRequestID: number
+  CustomerName: string
+  Status: string
+  CreatedAt: string
+}

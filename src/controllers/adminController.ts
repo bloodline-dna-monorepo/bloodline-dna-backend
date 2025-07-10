@@ -88,6 +88,17 @@ class AdminController {
       message: MESSAGES.SERVICE.DELETED
     })
   })
+
+  getUserById = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const accountId = req.params.userId
+
+    const user = await adminService.getUserById(Number.parseInt(accountId))
+    res.status(200).json({
+      success: true,
+      message: MESSAGES.SUCCESS.ACTION_PERFORMED_SUCCESS,
+      data: user
+    })
+  })
 }
 
 export const adminController = new AdminController()
