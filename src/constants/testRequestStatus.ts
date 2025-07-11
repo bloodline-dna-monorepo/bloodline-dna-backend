@@ -20,3 +20,11 @@ export const COLLECTION_METHOD = {
   AT_HOME: 'At Home',
   AT_FACILITY: 'At Facility'
 } as const
+
+export const TestRequestStatus = {
+  INPUT_INFO: 'Input Infor',
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed'
+}

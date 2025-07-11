@@ -216,7 +216,7 @@ ORDER BY tr.CreatedAt DESC
 
   async viewCreateTestResult() {
     const connection = await getDbPool()
-    const viewCreateTestResult = await connection.request().query(`Select * from TestResults where Status = 'Pending'`)
+    const viewCreateTestResult = await connection.request().query(`Select * from TestResults where Status = 'Verified'`)
     return viewCreateTestResult.recordset
   }
 
@@ -311,18 +311,18 @@ ORDER BY tr.CreatedAt DESC
 
     const result = await connection.request().input('testRequestId', testRequestId).query(`
         SELECT 
-          tr.ResultID,
+          tr.TestResultID,
           tr.TestRequestID,
-          tr.Results,
-          tr.EnteredBy,
-          tr.EnteredAt,
-          tr.ConfirmedBy,
-          tr.ConfirmedAt,
+          tr.Result,
+          tr.EnterBy,
+          tr.EnterDate,
+          tr.ConfirmBy,
+          tr.ConfirmDate,
           staff.FullName as EnteredByName,
           manager.FullName as ConfirmedByName
         FROM TestResults tr
-        LEFT JOIN UserProfiles staff ON tr.EnteredBy = staff.AccountID
-        LEFT JOIN UserProfiles manager ON tr.ConfirmedBy = manager.AccountID
+        LEFT JOIN UserProfiles staff ON tr.EnterBy = staff.AccountID
+        LEFT JOIN UserProfiles manager ON tr.ConfirmBy = manager.AccountID
         WHERE tr.TestRequestID = @testRequestId
       `)
 

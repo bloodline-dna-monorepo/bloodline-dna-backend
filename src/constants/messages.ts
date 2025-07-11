@@ -63,7 +63,22 @@ export const MESSAGES = {
     TEST_RESULTS_RETRIEVED: 'Test results retrieved successfully',
     RESULTS_NOT_AVAILABLE: 'Test results are not available yet',
     TEST_RESULT_NOT_FOUND: 'Test results not found',
-    TEST_RESULT_CONFIRM: 'Cofirm success'
+    TEST_RESULT_CONFIRM: 'Confirm success'
+  },
+  FEEDBACK: {
+    FETCH_PENDING_FAILED: 'Failed to fetch pending feedback requests',
+    FETCH_SUBMITTED_FAILED: 'Failed to fetch submitted feedback',
+    ALREADY_SUBMITTED: 'You have already submitted feedback for this test',
+    NOT_AUTHORIZED: 'You are not authorized to submit feedback for this test',
+    SUBMIT_SUCCESS: 'Feedback submitted successfully',
+    SUBMIT_FAILED: 'Failed to submit feedback',
+    MISSING_FIELDS: 'All fields (testResultId, rating, comment) are required',
+    INVALID_RATING: 'Rating must be between 1 and 5',
+    INVALID_COMMENT_LENGTH: 'Comment must be between 20 and 50 characters',
+    NOT_FOUND_PENDING: 'No pending feedback requests found',
+    NOT_FOUND_SUBMITTED: 'No submitted feedback found',
+    PENDING_RETRIEVED: 'Pending feedback requests retrieved successfully',
+    SUBMITTED_RETRIEVED: 'Submitted feedback retrieved successfully'
   },
   FILE: {
     FILE_UPLOADED: 'File uploaded successfully',
