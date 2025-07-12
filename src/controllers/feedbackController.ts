@@ -44,7 +44,17 @@ class FeedbackController {
       res.status(404).json({ message: MESSAGES.FEEDBACK.NOT_FOUND_SUBMITTED })
     }
   })
+  getPublicFeedbacks = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    const { success, data } = await feedbackService.getPublicFeedbacks()
 
+    if (success) {
+      res.status(200).json({
+        data: data
+      })
+    } else {
+      res.status(404).json({ message: 'không tìm thấy Feedback' })
+    }
+  })
   submitFeedback = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     const accountId = req.user?.accountId
     const { testResultId, rating, comment } = req.body

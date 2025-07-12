@@ -1,126 +1,105 @@
+import type { BlogPostManage, FeedbackManage, ManagerDashboardStats, TestResultManage } from '../types/type'
 import { getDbPool } from '../config/database'
 
-interface DashboardStats {
-  totalTests: number
-  revenue: number
-  avgRating: number
-  completed: number
-  pending: number
-  feedback: number
-  monthlyRevenue: number[]
-  serviceDistribution: number[]
-}
-
-interface TestResult {
-  TestResultID: number
-  TestRequestID: string
-  CustomerName: string
-  ServiceType: string
-  StaffName: string
-  Status: string
-  Result: string
-  SampleDate: string
-  CreatedAt: string
-}
-
-interface Feedback {
-  FeedbackID: number
-  TestResultID: number
-  Rating: number
-  Comment: string
-  FullName: string
-  CreatedAt: string
-}
-
-interface BlogPost {
-  BlogID: number
-  Title: string
-  Content: string
-  Excerpt: string
-  Author: string
-  Category: string
-  ImageUrl?: string
-  Status: string
-  CreatedAt: string
-  UpdatedAt: string
-}
-
 class ManagerService {
-  async getDashboardStats(): Promise<DashboardStats> {
+  async getDashboardStats(): Promise<ManagerDashboardStats> {
     const pool = await getDbPool()
 
-    // Get total tests
-    const totalTestsResult = await pool.request().query(`
+    try {
+      // Get total tests
+      const totalTestsResult = await pool.request().query(`
       SELECT COUNT(*) as totalTests FROM TestRequests
     `)
 
-    // Get revenue
-    const revenueResult = await pool.request().query(`
+      // Get revenue
+      const revenueResult = await pool.request().query(`
       SELECT SUM(s.Price) as revenue 
       FROM TestRequests tr
       JOIN Services s ON tr.ServiceID = s.ServiceID
+   
     `)
 
-    // Get average rating
-    const avgRatingResult = await pool.request().query(`
+      // Get average rating
+      const avgRatingResult = await pool.request().query(`
       SELECT AVG(CAST(Rating as FLOAT)) as avgRating 
       FROM Feedbacks
     `)
 
-    // Get completed tests
-    const completedResult = await pool.request().query(`
+      // Get completed tests
+      const completedResult = await pool.request().query(`
       SELECT COUNT(*) as completed 
       FROM TestRequests 
       WHERE Status = 'Completed'
     `)
 
-    // Get pending test results
-    const pendingResult = await pool.request().query(`
+      // Get pending test results
+      const pendingResult = await pool.request().query(`
       SELECT COUNT(*) as pending 
       FROM TestResults 
       WHERE Status = 'Pending'
     `)
 
-    // Get total feedback
-    const feedbackResult = await pool.request().query(`
+      // Get total feedback
+      const feedbackResult = await pool.request().query(`
       SELECT COUNT(*) as feedback FROM Feedbacks
     `)
 
-    // Get monthly revenue (last 6 months)
-    const monthlyRevenueResult = await pool.request().query(`
+      // Get monthly revenue (last 6 months)
+      const monthlyRevenueResult = await pool.request().query(`
       SELECT 
         MONTH(tr.CreatedAt) as month,
         SUM(s.Price) as revenue
       FROM TestRequests tr
       JOIN Services s ON tr.ServiceID = s.ServiceID
-      WHERE tr.CreatedAt >= DATEADD(month, -6, GETDATE())
+      WHERE 
+         tr.CreatedAt >= DATEADD(month, -6, GETDATE())
       GROUP BY MONTH(tr.CreatedAt)
       ORDER BY MONTH(tr.CreatedAt)
     `)
 
-    // Get service distribution
-    const serviceDistributionResult = await pool.request().query(`
+      // Get service distribution (only actual services)
+      const serviceDistributionResult = await pool.request().query(`
       SELECT 
         s.ServiceName,
         COUNT(*) as count
       FROM TestRequests tr
       JOIN Services s ON tr.ServiceID = s.ServiceID
       GROUP BY s.ServiceName, s.ServiceID
+      ORDER BY COUNT(*) DESC
     `)
 
-    return {
-      totalTests: totalTestsResult.recordset[0]?.totalTests || 0,
-      revenue: revenueResult.recordset[0]?.revenue || 0,
-      avgRating: Number((avgRatingResult.recordset[0]?.avgRating || 0).toFixed(1)),
-      completed: completedResult.recordset[0]?.completed || 0,
-      pending: pendingResult.recordset[0]?.pending || 0,
-      feedback: feedbackResult.recordset[0]?.feedback || 0,
-      monthlyRevenue: monthlyRevenueResult.recordset.map((r) => r.revenue || 0),
-      serviceDistribution: serviceDistributionResult.recordset.map((r) => r.count || 0)
+      // Process monthly revenue data
+      const monthlyRevenue = Array(6).fill(0)
+      monthlyRevenueResult.recordset.forEach((row) => {
+        const currentMonth = new Date().getMonth() + 1
+        const monthIndex = (row.month - currentMonth + 6) % 6
+        if (monthIndex >= 0 && monthIndex < 6) {
+          monthlyRevenue[monthIndex] = row.revenue || 0
+        }
+      })
+
+      // Process service distribution data
+      const serviceDistribution = serviceDistributionResult.recordset.map((row) => row.count)
+      const serviceNames = serviceDistributionResult.recordset.map((row) => row.ServiceName)
+
+      return {
+        totalTests: totalTestsResult.recordset[0]?.totalTests || 0,
+        revenue: revenueResult.recordset[0]?.revenue || 0,
+        avgRating: Number((avgRatingResult.recordset[0]?.avgRating || 0).toFixed(1)),
+        completed: completedResult.recordset[0]?.completed || 0,
+        pending: pendingResult.recordset[0]?.pending || 0,
+        feedback: feedbackResult.recordset[0]?.feedback || 0,
+        monthlyRevenue,
+        serviceDistribution,
+        serviceNames
+      }
+    } catch (error) {
+      console.error('Error getting manager dashboard stats:', error)
+      throw error
     }
   }
 
-  async getTestResults(): Promise<TestResult[]> {
+  async getTestResults(): Promise<TestResultManage[]> {
     const pool = await getDbPool()
 
     const result = await pool.request().query(`
@@ -140,14 +119,13 @@ class ManagerService {
       JOIN Accounts a ON tr.AccountID = a.AccountID
       JOIN UserProfiles up ON a.AccountID = up.AccountID
       LEFT JOIN UserProfiles staff ON tr_result.EnterBy = staff.AccountID
-      Where tr_result.Status = 'Pending'
       ORDER BY tr_result.EnterDate DESC
     `)
 
     return result.recordset
   }
 
-  async getTestResultById(testResultId: number): Promise<TestResult | null> {
+  async getTestResultById(testResultId: number): Promise<TestResultManage | null> {
     const pool = await getDbPool()
 
     const result = await pool.request().input('testResultId', testResultId).query(`
@@ -180,7 +158,7 @@ class ManagerService {
         UPDATE TestResults 
         SET Status = 'Verified', 
             ConfirmBy = @managerId,
-            ConfirmDate = GETDATE()
+            ConfirmedAt = GETDATE()
         WHERE TestResultID = @testResultId
       `)
 
@@ -211,14 +189,14 @@ class ManagerService {
         UPDATE TestResults 
         SET Status = 'Rejected', 
             ConfirmBy = @managerId,
-            ConfirmDate = GETDATE()
+            ConfirmedAt = GETDATE()
         WHERE TestResultID = @testResultId
       `)
 
     return { message: 'Test result rejected successfully' }
   }
 
-  async getFeedbacks(): Promise<Feedback[]> {
+  async getFeedbacks(): Promise<FeedbackManage[]> {
     const pool = await getDbPool()
 
     const result = await pool.request().query(`
@@ -278,7 +256,7 @@ class ManagerService {
     }
   }
 
-  async getBlogs(): Promise<BlogPost[]> {
+  async getBlogs(): Promise<BlogPostManage[]> {
     const pool = await getDbPool()
 
     const result = await pool.request().query(`
@@ -298,22 +276,19 @@ class ManagerService {
     return result.recordset
   }
 
-  async getBlogById(blogId: number): Promise<BlogPost | null> {
+  async getBlogById(blogId: number): Promise<BlogPostManage | null> {
     const pool = await getDbPool()
 
     const result = await pool.request().input('blogId', blogId).query(`
         SELECT 
           b.BlogID,
           b.Title,
-          b.Content,
-          b.Excerpt,
+          b.Description,
           up.FullName as Author,
-          b.Category,
-          b.ImageUrl,
-          b.Status,
+          b.Image,
           b.CreatedAt
         FROM Blogs b
-        JOIN Accounts a ON b.AuthorID = a.AccountID
+        JOIN Accounts a ON b.AccountID = a.AccountID
         JOIN UserProfiles up ON a.AccountID = up.AccountID
         WHERE b.BlogID = @blogId
       `)
@@ -323,34 +298,36 @@ class ManagerService {
 
   async createBlog(blogData: {
     Title: string
-    Content: string
-    Excerpt: string
-    Category: string
-    ImageUrl?: string
-    Status: string
-    AuthorID: number | undefined
-  }): Promise<BlogPost> {
+    Description: string
+    Image: string
+    AuthorID: number
+  }): Promise<BlogPostManage> {
     const pool = await getDbPool()
 
     const result = await pool
       .request()
       .input('title', blogData.Title)
-      .input('content', blogData.Content)
-      .input('excerpt', blogData.Excerpt)
-      .input('category', blogData.Category)
-      .input('imageUrl', blogData.ImageUrl || null)
-      .input('status', blogData.Status)
+      .input('content', blogData.Description)
+      .input('imageUrl', blogData.Image)
       .input('authorId', blogData.AuthorID).query(`
-        INSERT INTO Blogs (Title, Content, Excerpt, Category, ImageUrl, Status, AuthorID, CreatedAt)
+        INSERT INTO Blogs (Title, Description, Image, AccountID, CreatedAt)
         OUTPUT INSERTED.BlogID
-        VALUES (@title, @content, @excerpt, @category, @imageUrl, @status, @authorId, GETDATE())
+        VALUES (@title, @content, @imageUrl, @authorId, GETDATE())
       `)
 
     const blogId = result.recordset[0].BlogID
-    return this.getBlogById(blogId) as Promise<BlogPost>
+    return this.getBlogById(blogId) as Promise<BlogPostManage>
   }
 
-  async updateBlog(blogId: number, blogData: Partial<BlogPost>): Promise<BlogPost> {
+  async updateBlog(
+    blogId: number,
+    blogData: {
+      Title: string
+      Description: string
+      Image: string
+      AuthorID: number
+    }
+  ): Promise<BlogPostManage> {
     const pool = await getDbPool()
 
     const updateFields = []
@@ -360,28 +337,15 @@ class ManagerService {
       updateFields.push('Title = @title')
       inputs.title = blogData.Title
     }
-    if (blogData.Content) {
-      updateFields.push('Content = @content')
-      inputs.content = blogData.Content
-    }
-    if (blogData.Excerpt) {
-      updateFields.push('Excerpt = @excerpt')
-      inputs.excerpt = blogData.Excerpt
-    }
-    if (blogData.Category) {
-      updateFields.push('Category = @category')
-      inputs.category = blogData.Category
-    }
-    if (blogData.ImageUrl !== undefined) {
-      updateFields.push('ImageUrl = @imageUrl')
-      inputs.imageUrl = blogData.ImageUrl
-    }
-    if (blogData.Status) {
-      updateFields.push('Status = @status')
-      inputs.status = blogData.Status
+    if (blogData.Description) {
+      updateFields.push('Description = @content')
+      inputs.content = blogData.Description
     }
 
-    updateFields.push('UpdatedAt = GETDATE()')
+    if (blogData.Image !== undefined) {
+      updateFields.push('Image = @imageUrl')
+      inputs.imageUrl = blogData.Image
+    }
 
     const request = pool.request()
     Object.keys(inputs).forEach((key) => {
@@ -394,7 +358,7 @@ class ManagerService {
       WHERE BlogID = @blogId
     `)
 
-    return this.getBlogById(blogId) as Promise<BlogPost>
+    return this.getBlogById(blogId) as Promise<BlogPostManage>
   }
 
   async deleteBlog(blogId: number): Promise<void> {

@@ -73,7 +73,31 @@ class FeedbackService {
       throw new Error(MESSAGES.FEEDBACK.FETCH_SUBMITTED_FAILED)
     }
   }
+  async getPublicFeedbacks() {
+    try {
+      const pool = await getDbPool()
+      const request = pool.request()
 
+      const result = await request.query(`
+        SELECT TOP 5
+            f.FeedbackID,
+            f.Rating,
+            f.Comment,
+            f.CreatedAt,
+            a.Email as FullName -- Assuming FullName is available in Accounts table
+        FROM Feedbacks f
+        JOIN Accounts a ON f.AccountID = a.AccountID
+		JOIN dbo.UserProfiles uf ON uf.AccountID = a.AccountID
+        WHERE f.Rating >= 4 -- Only show feedbacks with 4 stars or more
+        ORDER BY f.CreatedAt DESC
+      `)
+
+      return { success: true, data: result.recordset }
+    } catch (error) {
+      console.error('Error fetching public feedbacks:', error)
+      throw new Error(MESSAGES.FEEDBACK.Get)
+    }
+  }
   /**
    * Gửi feedback mới cho 1 kết quả xét nghiệm.
    */

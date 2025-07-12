@@ -82,7 +82,7 @@ class StaffService {
     const completedResult = await connection.request().input('staffId', staffId).query(`
         SELECT COUNT(*) as completed
         FROM TestRequests 
-        WHERE AssignedTo = @staffId AND Status = 'Verified'
+        WHERE AssignedTo = @staffId AND Status = 'Completed'
       `)
 
     // Get total unique customers

@@ -78,7 +78,8 @@ export const MESSAGES = {
     NOT_FOUND_PENDING: 'No pending feedback requests found',
     NOT_FOUND_SUBMITTED: 'No submitted feedback found',
     PENDING_RETRIEVED: 'Pending feedback requests retrieved successfully',
-    SUBMITTED_RETRIEVED: 'Submitted feedback retrieved successfully'
+    SUBMITTED_RETRIEVED: 'Submitted feedback retrieved successfully',
+    Get:'Get feedback fail'
   },
   FILE: {
     FILE_UPLOADED: 'File uploaded successfully',

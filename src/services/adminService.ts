@@ -9,61 +9,102 @@ class AdminService {
     try {
       // Get total users
       const usersResult = await pool.request().query(`
-        SELECT COUNT(*) as totalUsers FROM Accounts
-      `)
+      SELECT COUNT(*) as totalUsers FROM Accounts
+    `)
 
       // Get total tests
       const testsResult = await pool.request().query(`
-        SELECT COUNT(*) as totalTests FROM TestRequests
-      `)
+      SELECT COUNT(*) as totalTests FROM TestRequests
+    `)
 
       // Get total services
       const servicesResult = await pool.request().query(`
-        SELECT COUNT(*) as totalServices FROM Services 
-      `)
+      SELECT COUNT(*) as totalServices FROM Services 
+    `)
 
-      // Get monthly revenue
+      // Get monthly revenue (last 6 months)
       const revenueResult = await pool.request().query(`
-        SELECT 
-          MONTH(tr.CreatedAt) as month,
-          SUM(s.Price) as revenue
-        FROM TestRequests tr
-        JOIN Services s ON tr.ServiceID = s.ServiceID
-        WHERE YEAR(tr.CreatedAt) = YEAR(GETDATE())
-        GROUP BY MONTH(tr.CreatedAt)
-        ORDER BY MONTH(tr.CreatedAt)
-      `)
+      SELECT 
+        MONTH(tr.CreatedAt) as month,
+        SUM(s.Price) as revenue
+      FROM TestRequests tr
+      JOIN Services s ON tr.ServiceID = s.ServiceID
+      WHERE tr.CreatedAt >= DATEADD(month, -6, GETDATE())
+      
+      GROUP BY MONTH(tr.CreatedAt)
+      ORDER BY MONTH(tr.CreatedAt)
+    `)
 
-      // Get service distribution
+      // Get service distribution (exclude "Other" category)
       const distributionResult = await pool.request().query(`
-        SELECT 
-          s.ServiceType,
-          COUNT(*) as count
-        FROM TestRequests tr
-        JOIN Services s ON tr.ServiceID = s.ServiceID
-        GROUP BY s.ServiceType
-      `)
+      SELECT 
+        s.ServiceName,
+        COUNT(*) as count
+      FROM TestRequests tr
+      JOIN Services s ON tr.ServiceID = s.ServiceID
+      GROUP BY s.ServiceName, s.ServiceID
+      ORDER BY COUNT(*) DESC
+    `)
 
+      // Get completed tests
+      const completedResult = await pool.request().query(`
+      SELECT COUNT(*) as completed 
+      FROM TestRequests 
+      WHERE Status = 'Completed'
+    `)
+
+      // Get pending tests
+      const pendingResult = await pool.request().query(`
+      SELECT COUNT(*) as pending 
+      FROM TestRequests 
+      WHERE Status = 'Pending'
+    `)
+
+      // Get total feedback
+      const feedbackResult = await pool.request().query(`
+      SELECT COUNT(*) as feedback FROM Feedbacks
+    `)
+
+      // Get average rating
+      const avgRatingResult = await pool.request().query(`
+      SELECT AVG(CAST(Rating as FLOAT)) as avgRating 
+      FROM Feedbacks
+    `)
+
+      // Get total revenue
+      const totalRevenueResult = await pool.request().query(`
+      SELECT SUM(s.Price) as totalRevenue
+      FROM TestRequests tr
+      JOIN Services s ON tr.ServiceID = s.ServiceID
+    
+    `)
+
+      // Process monthly revenue data
       const monthlyRevenue = Array(6).fill(0)
       revenueResult.recordset.forEach((row) => {
-        if (row.month <= 6) {
-          monthlyRevenue[row.month - 1] = row.revenue || 0
+        const currentMonth = new Date().getMonth() + 1
+        const monthIndex = (row.month - currentMonth + 6) % 6
+        if (monthIndex >= 0 && monthIndex < 6) {
+          monthlyRevenue[monthIndex] = row.revenue || 0
         }
       })
 
+      // Process service distribution data (only actual services, no "Other")
       const serviceDistribution = distributionResult.recordset.map((row) => row.count)
+      const serviceNames = distributionResult.recordset.map((row) => row.ServiceName)
 
       return {
         totalUsers: usersResult.recordset[0].totalUsers,
         totalTests: testsResult.recordset[0].totalTests,
         totalServices: servicesResult.recordset[0].totalServices,
-        revenue: monthlyRevenue.reduce((a, b) => a + b, 0),
-        avgRating: 4.2,
-        completed: 156,
-        pending: 24,
-        feedback: 87,
+        revenue: totalRevenueResult.recordset[0].totalRevenue || 0,
+        avgRating: Number((avgRatingResult.recordset[0]?.avgRating || 0).toFixed(1)),
+        completed: completedResult.recordset[0].completed,
+        pending: pendingResult.recordset[0].pending,
+        feedback: feedbackResult.recordset[0].feedback,
         monthlyRevenue,
-        serviceDistribution
+        serviceDistribution,
+        serviceNames
       }
     } catch (error) {
       console.error('Error getting dashboard stats:', error)
@@ -201,7 +242,7 @@ class AdminService {
         `)
       const created = await pool.request().input('serviceName', serviceData.ServiceName).query('SELECT * FROM Services')
 
-      return result.recordset[0]
+      return created.recordset[0]
     } catch (error) {
       console.error('Error creating service:', error)
       throw error
@@ -261,8 +302,7 @@ class AdminService {
 
     try {
       await pool.request().input('serviceId', serviceId).query(`
-          UPDATE Services 
-          SET  UpdatedAt = GETDATE()
+          DELETE Services 
           WHERE ServiceID = @serviceId
         `)
     } catch (error) {

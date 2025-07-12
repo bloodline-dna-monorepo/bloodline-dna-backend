@@ -1,43 +1,43 @@
 // Enum cho Role
 export enum Role {
-  Admin = 'Admin',
-  Manager = 'Manager',
-  Staff = 'Staff',
-  Customer = 'Customer'
+  Admin = "Admin",
+  Manager = "Manager",
+  Staff = "Staff",
+  Customer = "Customer",
 }
 
 // Enum cho ServiceType
 export enum ServiceType {
-  Administrative = 'Administrative',
-  Civil = 'Civil'
+  Administrative = "Administrative",
+  Civil = "Civil",
 }
 
 // Enum cho SampleCount
 export enum SampleCount {
   Two = 2,
-  Three = 3
+  Three = 3,
 }
 
 // Enum cho CollectionMethod
 export enum CollectionMethod {
-  Home = 'Home',
-  Facility = 'Facility'
+  Home = "Home",
+  Facility = "Facility",
 }
 
 // Enum cho PaymentStatus
 export enum PaymentStatus {
-  Pending = 'Pending',
-  Completed = 'Completed',
-  Failed = 'Failed',
-  Refunded = 'Refunded'
+  Pending = "Pending",
+  Completed = "Completed",
+  Failed = "Failed",
+  Refunded = "Refunded",
 }
 
 // Enum cho TestRequest Status
 export enum TestRequestStatus {
-  Pending = 'Pending',
-  InProgress = 'In Progress',
-  Completed = 'Completed',
-  Cancelled = 'Cancelled'
+  Pending = "Pending",
+  InProgress = "In Progress",
+  Completed = "Completed",
+  Cancelled = "Cancelled",
 }
 
 // Interface cho Account
@@ -109,11 +109,11 @@ export interface ChangePasswordRequest {
 interface Service {
   id: number
   ServiceName: string
-  ServiceType: 'Administrative' | 'Civil'
+  ServiceType: "Administrative" | "Civil"
   Price: number
   Description: string
   SampleCount: 2 | 3
-  collectionMethod: 'Home' | 'Facility'
+  collectionMethod: "Home" | "Facility"
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -127,7 +127,7 @@ interface Payment {
   collectionMethod: string
   appointmentDate?: Date
   appointmentTime?: string
-  status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled'
+  status: "Pending" | "Completed" | "Failed" | "Cancelled"
   vnpayTransactionId?: string
   vnpayResponseCode?: string
   createdAt: Date
@@ -157,7 +157,7 @@ interface SampleInformation {
   testRequestId: number
   fullName: string
   birthYear: number
-  gender: 'Male' | 'Female'
+  gender: "Male" | "Female"
   relationship: string
   sampleType: string
   commitment: boolean
@@ -181,7 +181,7 @@ export interface User {
   phoneNumber: string
 }
 
-export interface DashboardStats {
+interface DashboardStats {
   totalUsers: number
   totalTests: number
   totalServices: number
@@ -192,9 +192,10 @@ export interface DashboardStats {
   feedback: number
   monthlyRevenue: number[]
   serviceDistribution: number[]
+  serviceNames: string[] // Add this to store service names
 }
 
-export interface StaffDashboardStats {
+interface StaffDashboardStats {
   totalRequests: number
   pendingRequests: number
   completedRequests: number
@@ -202,7 +203,7 @@ export interface StaffDashboardStats {
   completionRate: number
 }
 
-export interface TestRequestDetail {
+interface TestRequestDetail {
   TestRequestID: number
   AccountID: number
   ServiceID: number
@@ -222,11 +223,75 @@ export interface TestRequestDetail {
   CustomerAddress: string | null
   TestSubjects: string
   KitID: string | null
+  StaffName: string | null
 }
 
-export interface RecentRequest {
+interface RecentRequest {
   TestRequestID: number
   CustomerName: string
   Status: string
   CreatedAt: string
+}
+
+interface ManagerDashboardStats {
+  totalTests: number
+  revenue: number
+  avgRating: number
+  completed: number
+  pending: number
+  feedback: number
+  monthlyRevenue: number[]
+  serviceDistribution: number[]
+  serviceNames: string[] // Add this to store service names
+}
+
+interface TestResultManage {
+  TestResultID: number
+  TestRequestID: string
+  CustomerName: string
+  ServiceType: string
+  StaffName: string
+  Status: string
+  Result: string
+  SampleDate: string
+  CreatedAt: string
+}
+
+interface FeedbackManage {
+  FeedbackID: number
+  TestResultID: number
+  Rating: number
+  Comment: string
+  FullName: string
+  CreatedAt: string
+}
+
+interface BlogPostManage {
+  BlogID: number
+  Title: string
+  Content: string
+  Excerpt: string
+  Author: string
+  Category: string
+  ImageUrl?: string
+  Status: string
+  CreatedAt: string
+  UpdatedAt: string
+}
+
+export interface TestProcess {
+  TestRequestID: number
+  AccountID: number
+  ServiceID: number
+  ServiceName: string
+  ServiceType: "Administrative" | "Civil"
+  CollectionMethod: "Home" | "Facility"
+  Appointment: string
+  Status: string
+  AssignedTo?: number
+  CreatedAt: string
+  UpdatedAt: string
+  SampleCount: number
+  Price?: number
+  KitID?: string
 }
