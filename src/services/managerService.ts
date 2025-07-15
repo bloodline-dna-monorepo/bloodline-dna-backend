@@ -158,17 +158,8 @@ class ManagerService {
         UPDATE TestResults 
         SET Status = 'Verified', 
             ConfirmBy = @managerId,
-            ConfirmedAt = GETDATE()
+            ConfirmDate = GETDATE()
         WHERE TestResultID = @testResultId
-      `)
-
-    // Update test request status to completed
-    await pool.request().input('testResultId', testResultId).query(`
-        UPDATE TestRequests 
-        SET Status = 'Completed'
-        WHERE TestRequestID = (
-          SELECT TestRequestID FROM TestResults WHERE TestResultID = @testResultId
-        )
       `)
 
     return { message: 'Test result approved successfully' }
@@ -181,19 +172,50 @@ class ManagerService {
   ): Promise<{ message: string }> {
     const pool = await getDbPool()
 
-    await pool
-      .request()
-      .input('testResultId', testResultId)
-      .input('managerId', managerId)
-      .input('reason', reason || '').query(`
-        UPDATE TestResults 
-        SET Status = 'Rejected', 
-            ConfirmBy = @managerId,
-            ConfirmedAt = GETDATE()
-        WHERE TestResultID = @testResultId
-      `)
+    try {
+      // Start transaction
+      const transaction = pool.transaction()
+      await transaction.begin()
 
-    return { message: 'Test result rejected successfully' }
+      try {
+        // Get the TestRequestID before deleting
+        const testResultQuery = await transaction
+          .request()
+          .input('testResultId', testResultId)
+          .query('SELECT TestRequestID FROM TestResults WHERE TestResultID = @testResultId')
+
+        if (testResultQuery.recordset.length === 0) {
+          throw new Error('Test result not found')
+        }
+
+        const testRequestId = testResultQuery.recordset[0].TestRequestID
+
+        // Delete the test result
+        await transaction
+          .request()
+          .input('testResultId', testResultId)
+          .query('DELETE FROM TestResults WHERE TestResultID = @testResultId')
+
+        // Update test request status back to 'In Progress'
+        await transaction.request().input('testRequestId', testRequestId).query(`
+            UPDATE TestRequests 
+            SET Status = 'In Progress'
+            WHERE TestRequestID = @testRequestId
+          `)
+
+        // Commit transaction
+        await transaction.commit()
+
+        return { message: 'Test result rejected and deleted successfully' }
+      } catch (error) {
+        // Rollback transaction on error
+        await transaction.rollback()
+        throw error
+      }
+    } catch (error) {
+      console.error('Error rejecting test result:', error)
+      throw error
+    }
   }
 
   async getFeedbacks(): Promise<FeedbackManage[]> {

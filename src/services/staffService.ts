@@ -432,14 +432,12 @@ class StaffService {
         INSERT INTO TestResults (TestRequestID, Result, EnterBy, EnterDate, Status)
         VALUES (@testRequestId, @result, @enterBy, GETDATE(), 'Pending')
       `)
-
-    // Update test request status to Pending Review (waiting for manager approval)
-    await connection.request().input('testRequestId', testRequestId).input('status', 'Pending') // Chờ manager duyệt
-      .query(`
+    await connection.request().input('testRequestId', testRequestId).query(`
         UPDATE TestRequests 
-        SET Status = @status, UpdatedAt = GETDATE()
+        SET Status = 'Completed'
         WHERE TestRequestID = @testRequestId
       `)
+    // Update test request status to Pending Review (waiting for manager approval)
   }
 }
 

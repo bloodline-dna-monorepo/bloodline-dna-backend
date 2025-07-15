@@ -19,7 +19,7 @@ export const registerHandler = async (req: AuthRequest, res: Response): Promise<
   }
   const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/
   if (!emailRegex.test(Email)) {
-    res.status(400).json({ message: 'Email ko hợp lệ' })
+    res.status(400).json({ message: 'Email không hợp lệ' })
     return
   }
   const phoneRegex = /^0\d{9}$/
@@ -27,7 +27,14 @@ export const registerHandler = async (req: AuthRequest, res: Response): Promise<
     res.status(400).json({ message: 'Phone Number không hợp lệ' })
     return
   }
-
+  const pool = await getDbPool()
+  const phoneNumber1 = await pool.request().input('phoneNumber', PhoneNumber).query(`
+    SELECT PhoneNumber FROM UserProfiles WHERE PhoneNumber = @phoneNumber
+  `)
+  if (phoneNumber1.recordset.length > 0) {
+    res.status(409).json({ message: 'Phone Number đã bị trùng' })
+    return
+  }
   try {
     const user = await register(
       Email,
@@ -43,8 +50,11 @@ export const registerHandler = async (req: AuthRequest, res: Response): Promise<
       res.status(409).json({ message: 'Email đã tồn tại' })
       return
     }
+
     res.status(201).json({ message: 'Đăng ký thành công', success: true })
   } catch (error: unknown) {
+    console.log(error)
+
     if (error instanceof Error) {
       res.status(500).json({ message: error.message })
     } else {
@@ -76,6 +86,8 @@ export const loginHandler = async (req: AuthRequest, res: Response): Promise<voi
     })
   } catch (error: unknown) {
     if (error instanceof Error) {
+      console.log(Error)
+
       res.status(500).json({ message: error.message })
     } else {
       res.status(500).json({ message: 'Đã xảy ra lỗi không xác định' })

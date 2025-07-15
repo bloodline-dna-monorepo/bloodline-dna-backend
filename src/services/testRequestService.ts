@@ -121,8 +121,8 @@ class TestRequestService {
   th.KitID
 FROM TestRequests tr
 INNER JOIN Services s ON tr.ServiceID = s.ServiceID
-LEFT JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID AND tr.CollectionMethod = 'Home'
-LEFT JOIN TestAtFacility tf ON tr.TestRequestID = tf.TestRequestID AND tr.CollectionMethod = 'Facility'
+LEFT JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID
+LEFT JOIN TestAtFacility tf ON tr.TestRequestID = tf.TestRequestID
 WHERE tr.AccountID = @id
 ORDER BY tr.CreatedAt DESC
       `)

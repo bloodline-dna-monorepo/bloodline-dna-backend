@@ -244,7 +244,7 @@ class TestRequestController {
       // === BODY ===
       doc.font('Roboto').fontSize(11)
       doc.text(
-        `Theo Đơn yêu cầu xét nghiệm ADN ngày ${testDate} của ông ${testRequest.CustomerName} (Email: ${testRequest.CustomerEmail}), Công ty Gen Unity đã tiến hành lấy mẫu xét nghiệm ADN cho những người sau:`
+        `Theo Đơn yêu cầu xét nghiệm ADN ngày ${testDate} của ông ${testRequest.CustomerName} (Email: ${testRequest.CustomerEmail}), Công ty GenUnity đã tiến hành lấy mẫu xét nghiệm ADN cho những người sau:`
       )
       doc.moveDown()
 
@@ -320,7 +320,7 @@ class TestRequestController {
           const buffer = decodeBase64Image(staffSig)
           doc.image(buffer, leftX, imageY, {
             width: 100,
-            height: 40
+            height: 80
           })
         } catch (err) {
           console.error('Lỗi khi hiển thị chữ ký đại diện:', err)
@@ -420,7 +420,7 @@ class TestRequestController {
 
       // --- INFO ---
       doc.font('Roboto').fontSize(11)
-      doc.text(`Hôm nay, ngày ${today}, tại ....................................................`)
+      doc.text(`Hôm nay, ngày ${today}, tại ......................Cơ Sở GenUnity.........................`)
       doc.moveDown()
 
       doc.font('Roboto-Bold').text('Chúng tôi gồm có:')
@@ -467,20 +467,28 @@ class TestRequestController {
 
         // === Vân tay box ===
         const fingerprintY = topY + lineHeight * 1
+
+        // Vẽ khung chữ nhật
         doc.rect(signatureX, fingerprintY, 120, 60).stroke()
-        doc.fontSize(8).text('Vân tay ngón trỏ phải', signatureX + 10, fingerprintY + 20, {
+
+        // Text ghi chú nằm trên cùng trong box
+        doc.fontSize(8).text('Vân tay ngón trỏ phải', signatureX + 10, fingerprintY + 2, {
           width: 100,
           align: 'center'
         })
 
-        // === Signature Image ===
+        // Vẽ ảnh dấu vân tay nằm ngay trong box (căn giữa chiều cao)
         if (s.SignatureImage) {
           try {
             const imageBuffer = decodeBase64Image(s.SignatureImage)
-            const imageY = fingerprintY + 70
-            doc.image(imageBuffer, signatureX, imageY, {
-              width: 100,
-              height: 40
+            const imageWidth = 40
+            const imageHeight = 40
+            const imageX = signatureX + (120 - imageWidth) / 2
+            const imageY = fingerprintY + 15 // Căn giữa khoảng dưới text
+
+            doc.image(imageBuffer, imageX, imageY, {
+              width: imageWidth,
+              height: imageHeight
             })
           } catch (error) {
             console.error(`Lỗi hiển thị chữ ký của ${s.TesterName}:`, error)
@@ -514,14 +522,14 @@ class TestRequestController {
       doc.text('(Ký, ghi rõ họ tên)', col2X, rowY + 15)
 
       // === CHÈN CHỮ KÝ NGAY DƯỚI CỘT ===
-      const imageHeight = 40
+   
       const imageWidth = 100
       const imageY = rowY + 35
 
       if (staffSig) {
         try {
           const buffer = decodeBase64Image(staffSig)
-          doc.image(buffer, col1X, imageY, { width: imageWidth, height: imageHeight })
+          doc.image(buffer, col1X, imageY, { width: imageWidth })
         } catch (error) {
           console.error('Lỗi hiển thị chữ ký người thu mẫu:', error)
         }
@@ -530,7 +538,7 @@ class TestRequestController {
       if (customerSig) {
         try {
           const buffer = decodeBase64Image(customerSig)
-          doc.image(buffer, col2X, imageY, { width: imageWidth, height: imageHeight })
+          doc.image(buffer, col2X, imageY, { width: imageWidth })
         } catch (error) {
           console.error('Lỗi hiển thị chữ ký người yêu cầu:', error)
         }

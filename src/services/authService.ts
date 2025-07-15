@@ -23,7 +23,7 @@ export const register = async (
   // Kiểm tra định dạng email
 
   const pool = await getDbPool()
-
+ 
   // Kiểm tra nếu email đã tồn tại trong bảng Accounts
   const result = await pool.request().input('email', email).query(`
     SELECT Email FROM Accounts WHERE Email = @Email

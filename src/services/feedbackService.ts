@@ -84,11 +84,11 @@ class FeedbackService {
             f.Rating,
             f.Comment,
             f.CreatedAt,
-            a.Email as FullName -- Assuming FullName is available in Accounts table
+            a.Email as FullName 
         FROM Feedbacks f
         JOIN Accounts a ON f.AccountID = a.AccountID
 		JOIN dbo.UserProfiles uf ON uf.AccountID = a.AccountID
-        WHERE f.Rating >= 4 -- Only show feedbacks with 4 stars or more
+        WHERE f.Rating >= 4 
         ORDER BY f.CreatedAt DESC
       `)
 
