@@ -1,8 +1,15 @@
 import type { Response, Request } from 'express'
 import type { AuthRequest } from '../middlewares/authMiddleware'
-import { register, login, verifyRefreshToken, generateAccessToken, PasswordChange } from '../services/authService'
+import {
+  register,
+  login,
+  verifyRefreshToken,
+  generateAccessToken,
+  PasswordChange,
+  forgotPassword,
+  resetPassword
+} from '../services/authService'
 import { getDbPool } from '../config/database'
-import { log } from 'console'
 
 export const registerHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   const { Email, PasswordHash, ConfirmPassword, FullName, PhoneNumber, Address, DateOfBirth, SignatureImage } = req.body
@@ -213,6 +220,67 @@ export const logoutHandler = async (req: AuthRequest, res: Response): Promise<vo
       res.status(500).json({ message: error.message })
     } else {
       res.status(500).json({ message: 'Đã xảy ra lỗi không xác định' })
+    }
+  }
+}
+
+export const forgotPasswordHandler = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body
+
+  if (!email) {
+    res.status(400).json({ message: 'Email is required' })
+    return
+  }
+
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/
+  if (!emailRegex.test(email)) {
+    res.status(400).json({ message: 'Invalid email format' })
+    return
+  }
+
+  try {
+    const result = await forgotPassword(email)
+    res.json({ success: true, message: result.message })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === 'Email not found') {
+        res.status(404).json({ message: 'Email not found' })
+      } else {
+        res.status(500).json({ message: error.message })
+      }
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' })
+    }
+  }
+}
+
+export const resetPasswordHandler = async (req: Request, res: Response): Promise<void> => {
+  const { token, newPassword, confirmPassword } = req.body
+
+  if (!token || !newPassword || !confirmPassword) {
+    res.status(400).json({ message: 'Token, new password, and confirm password are required' })
+    return
+  }
+
+  if (newPassword !== confirmPassword) {
+    res.status(400).json({ message: 'Passwords do not match' })
+    return
+  }
+
+  try {
+    const result = await resetPassword(token, newPassword)
+    res.json({ success: true, message: result.message })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.message === 'Invalid or expired reset token') {
+        res.status(400).json({ message: 'Invalid or expired reset token' })
+      } else if (error.message === 'Password must be between 6 and 12 characters') {
+        res.status(400).json({ message: 'Password must be between 6 and 12 characters' })
+      } else {
+        res.status(500).json({ message: error.message })
+      }
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' })
     }
   }
 }

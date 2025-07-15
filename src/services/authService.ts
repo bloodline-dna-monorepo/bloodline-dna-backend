@@ -2,6 +2,8 @@ import bcrypt from 'bcrypt'
 import { getDbPool } from '../config/database'
 import jwt from 'jsonwebtoken'
 import { config } from '../config/config'
+import { EmailService } from '../utils/email'
+import { PasswordActionResult } from '../types/type'
 
 export const register = async (
   email: string,
@@ -23,7 +25,7 @@ export const register = async (
   // Kiểm tra định dạng email
 
   const pool = await getDbPool()
- 
+
   // Kiểm tra nếu email đã tồn tại trong bảng Accounts
   const result = await pool.request().input('email', email).query(`
     SELECT Email FROM Accounts WHERE Email = @Email
@@ -261,5 +263,103 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
       // Nếu lỗi không phải là Error object, thông báo lỗi chung
       throw new Error('Error updating password: Unknown error')
     }
+  }
+}
+
+export const forgotPassword = async (email: string): Promise<PasswordActionResult> => {
+  const pool = await getDbPool()
+
+  try {
+    // Kiểm tra email có tồn tại không
+    const result = await pool.request().input('email', email).query(`
+      SELECT a.AccountID, a.Email, up.FullName 
+      FROM Accounts a
+      LEFT JOIN UserProfiles up ON a.AccountID = up.AccountID
+      WHERE a.Email = @email
+    `)
+
+    if (result.recordset.length === 0) {
+      return { success: false, message: 'Email không tồn tại trong hệ thống' }
+    }
+
+    const user = result.recordset[0]
+
+    // Tạo reset token với thời hạn 15 phút
+    const resetToken = jwt.sign(
+      {
+        accountId: user.AccountID,
+        email: user.Email,
+        type: 'password_reset'
+      },
+      config.jwt.secret,
+      { expiresIn: '15m' }
+    )
+
+    // Tạo reset URL
+    const resetUrl = `${config.cors.origin}/reset-password?token=${resetToken}`
+
+    // Gửi email
+    const emailSent = await EmailService.sendPasswordResetEmail(user.Email, resetUrl, user.FullName)
+
+    if (!emailSent) {
+      return { success: false, message: 'Không thể gửi email khôi phục mật khẩu' }
+    }
+
+    return { success: true, message: 'Email khôi phục mật khẩu đã được gửi' }
+  } catch (error) {
+    console.error('Error in forgotPassword:', error)
+    return { success: false, message: 'Đã xảy ra lỗi khi xử lý yêu cầu khôi phục mật khẩu' }
+  }
+}
+
+export const resetPassword = async (token: string, newPassword: string): Promise<PasswordActionResult> => {
+  const pool = await getDbPool()
+
+  try {
+    // Xác minh token
+    const decoded = jwt.verify(token, config.jwt.secret) as {
+      accountId: number
+      email: string
+      type: string
+    }
+
+    if (decoded.type !== 'password_reset') {
+      return { success: false, message: 'Token không hợp lệ hoặc sai mục đích' }
+    }
+
+    const userResult = await pool.request().input('accountId', decoded.accountId).query(`
+      SELECT AccountID, Email FROM Accounts WHERE AccountID = @accountId
+    `)
+
+    if (userResult.recordset.length === 0) {
+      return { success: false, message: 'Tài khoản không tồn tại' }
+    }
+
+    // Validate mật khẩu ở đây nếu muốn thêm (nếu chưa validate ở controller)
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    await pool
+      .request()
+      .input('accountId', decoded.accountId)
+      .input('hashedPassword', hashedPassword)
+      .query('UPDATE Accounts SET PasswordHash = @hashedPassword WHERE AccountID = @accountId')
+
+    const user = userResult.recordset[0]
+    const userProfileResult = await pool.request().input('accountId', decoded.accountId).query(`
+      SELECT FullName FROM UserProfiles WHERE AccountID = @accountId
+    `)
+
+    const fullName = userProfileResult.recordset.length > 0 ? userProfileResult.recordset[0].FullName : null
+    await EmailService.sendPasswordChangeNotification(user.Email, fullName)
+
+    return { success: true, message: 'Mật khẩu đã được đặt lại thành công' }
+  } catch (error) {
+    console.error('Error in resetPassword:', error)
+    if (error instanceof jwt.JsonWebTokenError) {
+      return { success: false, message: 'Token không hợp lệ hoặc đã hết hạn' }
+    }
+
+    return { success: false, message: 'Đã xảy ra lỗi khi đặt lại mật khẩu' }
   }
 }

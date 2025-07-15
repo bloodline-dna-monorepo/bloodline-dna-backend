@@ -295,3 +295,8 @@ export interface TestProcess {
   Price?: number
   KitID?: string
 }
+
+export type PasswordActionResult = {
+  success: boolean
+  message: string
+}
