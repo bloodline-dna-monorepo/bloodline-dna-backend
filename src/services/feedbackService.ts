@@ -141,6 +141,47 @@ class FeedbackService {
       throw error
     }
   }
+
+  async updateFeedback(accountId: number, feedbackId: number, rating: number, comment: string) {
+    try {
+      const pool = await getDbPool()
+      const request = pool.request()
+      request.input('accountId', accountId)
+      request.input('feedbackId', feedbackId)
+      request.input('rating', rating)
+      request.input('comment', comment)
+
+      // Kiểm tra feedback có tồn tại và thuộc về user không
+      const existingFeedback = await request.query(`
+        SELECT FeedbackID, AccountID FROM Feedbacks WHERE FeedbackID = @feedbackId
+      `)
+
+      if (!existingFeedback.recordset.length) {
+        throw new Error(MESSAGES.FEEDBACK.NOT_FOUND)
+      }
+
+      if (existingFeedback.recordset[0].AccountID !== accountId) {
+        throw new Error(MESSAGES.FEEDBACK.NOT_AUTHORIZED)
+      }
+
+      // Cập nhật feedback
+      await request.query(`
+        UPDATE Feedbacks 
+        SET Comment = @comment, Rating = @rating, CreatedAt = GETDATE()
+        WHERE FeedbackID = @feedbackId AND AccountID = @accountId
+      `)
+
+      // Lấy feedback đã cập nhật
+      const updatedFeedback = await request.query(`
+        SELECT * FROM Feedbacks WHERE FeedbackID = @feedbackId
+      `)
+
+      return { success: true, data: updatedFeedback.recordset[0] }
+    } catch (error) {
+      console.error('Error updating feedback:', error)
+      throw error
+    }
+  }
 }
 
 export const feedbackService = new FeedbackService()

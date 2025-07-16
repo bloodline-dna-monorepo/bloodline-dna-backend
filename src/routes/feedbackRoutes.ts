@@ -10,5 +10,6 @@ router.get('/submitted', authenticate, authorize(['Customer']), feedbackControll
 // New public route for general feedbacks
 router.get('/public', feedbackController.getPublicFeedbacks)
 router.post('/', authenticate, authorize(['Customer']), feedbackController.submitFeedback)
+router.put('/:feedbackId', authenticate, authorize(['Customer']), feedbackController.updateFeedback)
 
 export { router as feedbackRoutes }

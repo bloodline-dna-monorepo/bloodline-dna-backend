@@ -79,7 +79,10 @@ export const MESSAGES = {
     NOT_FOUND_SUBMITTED: 'No submitted feedback found',
     PENDING_RETRIEVED: 'Pending feedback requests retrieved successfully',
     SUBMITTED_RETRIEVED: 'Submitted feedback retrieved successfully',
-    Get:'Get feedback fail'
+    Get: 'Get feedback fail',
+    NOT_FOUND: 'Không tìm thấy feedback',
+    UPDATE_SUCCESS: 'Cập nhật thành công',
+    UPDATE_FAILED: 'Cập nhật thất bại'
   },
   FILE: {
     FILE_UPLOADED: 'File uploaded successfully',
