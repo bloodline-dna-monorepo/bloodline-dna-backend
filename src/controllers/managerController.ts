@@ -2,6 +2,7 @@ import type { Response } from 'express'
 import type { AuthRequest } from '../middlewares/authMiddleware'
 import { managerService } from '../services/managerService'
 import { asyncHandler } from '../middlewares/errorMiddleware'
+import { EmailService } from '../utils/email'
 
 class ManagerController {
   // Dashboard
@@ -48,9 +49,18 @@ class ManagerController {
     const managerId = req.user?.accountId
 
     const result = await managerService.approveTestResult(Number(testResultId), managerId)
+
+    // Gửi email thông báo kết quả
+    await EmailService.sendTestResultsNotification(
+      result.email,
+      result.serviceName,
+      result.registrationId,
+      result.fullName
+    )
+
     res.status(200).json({
       success: true,
-      message: 'Test result approved successfully',
+      message: 'Test result approved and notification sent successfully',
       data: result
     })
   })

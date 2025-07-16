@@ -151,18 +151,49 @@ class ManagerService {
     return result.recordset[0] || null
   }
 
-  async approveTestResult(testResultId: number, managerId: number | undefined): Promise<{ message: string }> {
+  async approveTestResult(
+    testResultId: number,
+    managerId: number | undefined
+  ): Promise<{
+    registrationId: number
+    email: string
+    fullName: string
+    serviceName: string
+  }> {
     const pool = await getDbPool()
 
+    // Cập nhật kết quả xét nghiệm
     await pool.request().input('testResultId', testResultId).input('managerId', managerId).query(`
-        UPDATE TestResults 
-        SET Status = 'Verified', 
-            ConfirmBy = @managerId,
-            ConfirmDate = GETDATE()
-        WHERE TestResultID = @testResultId
-      `)
+    UPDATE TestResults 
+    SET Status = 'Verified', 
+        ConfirmBy = @managerId,
+        ConfirmDate = GETDATE()
+    WHERE TestResultID = @testResultId
+  `)
 
-    return { message: 'Test result approved successfully' }
+    // Truy vấn thông tin liên quan để gửi email
+    const result = await pool.request().input('testResultId', testResultId).query(`
+    SELECT 
+      tr.TestRequestID AS registrationId,
+      a.Email,
+      up.FullName,
+      s.ServiceName
+    FROM TestResults tr
+    JOIN TestRequests req ON tr.TestRequestID = req.TestRequestID
+    JOIN Accounts a ON req.AccountID = a.AccountID
+    LEFT JOIN UserProfiles up ON a.AccountID = up.AccountID
+    JOIN Services s ON req.ServiceID = s.ServiceID
+    WHERE tr.TestResultID = @testResultId
+  `)
+
+    const data = result.recordset[0]
+
+    return {
+      registrationId: data.registrationId,
+      email: data.Email,
+      fullName: data.FullName,
+      serviceName: data.ServiceName
+    }
   }
 
   async rejectTestResult(
