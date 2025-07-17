@@ -318,7 +318,7 @@ ORDER BY tr.CreatedAt DESC
           tr.EnterDate,
           tr.ConfirmBy,
           tr.ConfirmDate,
-          staff.FullName as EnteredByName,
+          staff.FullName as StaffName,
           manager.FullName as ConfirmedByName
         FROM TestResults tr
         LEFT JOIN UserProfiles staff ON tr.EnterBy = staff.AccountID

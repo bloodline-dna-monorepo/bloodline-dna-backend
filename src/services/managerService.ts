@@ -129,24 +129,41 @@ class ManagerService {
     const pool = await getDbPool()
 
     const result = await pool.request().input('testResultId', testResultId).query(`
-        SELECT 
-          tr_result.TestResultID,
-          tr_result.TestRequestID,
-          up.FullName as CustomerName,
-          s.ServiceType,
-          staff.FullName as StaffName,
-          tr_result.Status,
-          tr_result.Result,
-          tr_result.EnterDate as SampleDate,
-          tr_result.EnterDate as CreatedAt
-        FROM TestResults tr_result
-        JOIN TestRequests tr ON tr_result.TestRequestID = tr.TestRequestID
-        JOIN Services s ON tr.ServiceID = s.ServiceID
-        JOIN Accounts a ON tr.AccountID = a.AccountID
-        JOIN UserProfiles up ON a.AccountID = up.AccountID
-        LEFT JOIN UserProfiles staff ON tr_result.EnterBy = staff.AccountID
-        WHERE tr_result.TestResultID = @testResultId
-      `)
+SELECT 
+  tr_result.TestResultID,
+  tr_result.TestRequestID,
+  up.FullName AS CustomerName,
+  a.Email AS CustomerEmail,
+  up.PhoneNumber AS CustomerPhone,
+  up.Address AS CustomerAddress,
+  s.ServiceName,
+  s.ServiceType,
+  s.SampleCount,
+  tr.Appointment AS RegistrationDate,  
+  ISNULL(
+    STUFF((
+      SELECT CHAR(10) + sc.TesterName + ' (' + sc.Relationship + ') - ' + sc.SampleType
+      FROM SampleCategories sc 
+      WHERE sc.TestRequestID = tr.TestRequestID
+      FOR XML PATH(''), TYPE
+    ).value('.', 'NVARCHAR(MAX)'), 1, 1, ''),
+    'Chưa có thông tin mẫu'
+  ) AS TestSubjects,
+  tr_result.Status,
+  tr_result.Result,
+  tr_result.EnterDate AS SampleDate,
+  tr_result.EnterDate AS CreatedAt,
+  tr_result.ConfirmDate,
+  staff.FullName AS StaffName
+FROM TestResults tr_result
+JOIN TestRequests tr ON tr_result.TestRequestID = tr.TestRequestID
+JOIN Services s ON tr.ServiceID = s.ServiceID
+JOIN Accounts a ON tr.AccountID = a.AccountID
+JOIN UserProfiles up ON a.AccountID = up.AccountID
+LEFT JOIN UserProfiles staff ON tr_result.EnterBy = staff.AccountID
+WHERE tr_result.TestResultID = @testResultId
+
+  `)
 
     return result.recordset[0] || null
   }

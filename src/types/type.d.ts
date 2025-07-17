@@ -1,43 +1,43 @@
 // Enum cho Role
 export enum Role {
-  Admin = "Admin",
-  Manager = "Manager",
-  Staff = "Staff",
-  Customer = "Customer",
+  Admin = 'Admin',
+  Manager = 'Manager',
+  Staff = 'Staff',
+  Customer = 'Customer'
 }
 
 // Enum cho ServiceType
 export enum ServiceType {
-  Administrative = "Administrative",
-  Civil = "Civil",
+  Administrative = 'Administrative',
+  Civil = 'Civil'
 }
 
 // Enum cho SampleCount
 export enum SampleCount {
   Two = 2,
-  Three = 3,
+  Three = 3
 }
 
 // Enum cho CollectionMethod
 export enum CollectionMethod {
-  Home = "Home",
-  Facility = "Facility",
+  Home = 'Home',
+  Facility = 'Facility'
 }
 
 // Enum cho PaymentStatus
 export enum PaymentStatus {
-  Pending = "Pending",
-  Completed = "Completed",
-  Failed = "Failed",
-  Refunded = "Refunded",
+  Pending = 'Pending',
+  Completed = 'Completed',
+  Failed = 'Failed',
+  Refunded = 'Refunded'
 }
 
 // Enum cho TestRequest Status
 export enum TestRequestStatus {
-  Pending = "Pending",
-  InProgress = "In Progress",
-  Completed = "Completed",
-  Cancelled = "Cancelled",
+  Pending = 'Pending',
+  InProgress = 'In Progress',
+  Completed = 'Completed',
+  Cancelled = 'Cancelled'
 }
 
 // Interface cho Account
@@ -109,11 +109,11 @@ export interface ChangePasswordRequest {
 interface Service {
   id: number
   ServiceName: string
-  ServiceType: "Administrative" | "Civil"
+  ServiceType: 'Administrative' | 'Civil'
   Price: number
   Description: string
   SampleCount: 2 | 3
-  collectionMethod: "Home" | "Facility"
+  collectionMethod: 'Home' | 'Facility'
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -127,7 +127,7 @@ interface Payment {
   collectionMethod: string
   appointmentDate?: Date
   appointmentTime?: string
-  status: "Pending" | "Completed" | "Failed" | "Cancelled"
+  status: 'Pending' | 'Completed' | 'Failed' | 'Cancelled'
   vnpayTransactionId?: string
   vnpayResponseCode?: string
   createdAt: Date
@@ -157,7 +157,7 @@ interface SampleInformation {
   testRequestId: number
   fullName: string
   birthYear: number
-  gender: "Male" | "Female"
+  gender: 'Male' | 'Female'
   relationship: string
   sampleType: string
   commitment: boolean
@@ -245,16 +245,24 @@ interface ManagerDashboardStats {
   serviceNames: string[] // Add this to store service names
 }
 
-interface TestResultManage {
+export interface TestResultManage {
   TestResultID: number
-  TestRequestID: string
+  TestRequestID: number
   CustomerName: string
+  CustomerEmail: string
+  CustomerPhone: string
+  CustomerAddress: string
+  ServiceName: string
   ServiceType: string
-  StaffName: string
+  SampleCount: number
+  TestSubjects: string
   Status: string
   Result: string
   SampleDate: string
   CreatedAt: string
+  ConfirmDate: string
+  StaffName: string
+  RegistrationDate: string
 }
 
 interface FeedbackManage {
@@ -284,8 +292,8 @@ export interface TestProcess {
   AccountID: number
   ServiceID: number
   ServiceName: string
-  ServiceType: "Administrative" | "Civil"
-  CollectionMethod: "Home" | "Facility"
+  ServiceType: 'Administrative' | 'Civil'
+  CollectionMethod: 'Home' | 'Facility'
   Appointment: string
   Status: string
   AssignedTo?: number
