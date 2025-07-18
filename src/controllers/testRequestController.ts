@@ -310,14 +310,14 @@ class TestRequestController {
       doc
         .font('Roboto')
         .fontSize(9)
-        .text('(Ký, ghi rõ họ tên)', leftX, doc.y + 2)
+        .text('(Ký, ghi rõ họ tên hoặc lăn tay)', leftX, doc.y + 2)
 
       // Cột phải: Đại diện công ty
       doc.font('Roboto-Bold').fontSize(11).text('ĐẠI DIỆN CÔNG TY', rightX, signatureTopY)
       doc
         .font('Roboto')
         .fontSize(9)
-        .text('(Ký, ghi rõ họ tên)', rightX, doc.y + 2)
+        .text('(Đóng mộc hoặc lăn tay)', rightX, doc.y + 2)
 
       // Tọa độ để chèn ảnh sau dòng chữ
       const imageY = doc.y + 10
@@ -558,8 +558,8 @@ class TestRequestController {
       doc.text('NGƯỜI YÊU CẦU XÉT NGHIỆM', col2X, rowY)
 
       doc.font('Roboto').fontSize(9)
-      doc.text('(Ký, ghi rõ họ tên và lăn tay)', col1X, rowY + 15)
-      doc.text('(Ký, ghi rõ họ tên)', col2X, rowY + 15)
+      doc.text('(Ký, ghi rõ họ tên hoặc lăn tay)', col1X, rowY + 15)
+      doc.text('(Ký, ghi rõ họ tên hoặc lăn tay)', col2X, rowY + 15)
 
       // === CHÈN CHỮ KÝ NGAY DƯỚI CỘT ===
 
