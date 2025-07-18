@@ -58,15 +58,16 @@ export class EmailService {
   }
 
   static async sendPasswordChangeNotification(email: string, fullName?: string): Promise<boolean> {
-    const subject = 'Password Changed Successfully'
-    const text = `Hello ${fullName || 'there'},\n\nYour password has been changed successfully.\n\nIf this wasn't you, please contact us.\n\nBest regards,\nGenUnity Team`
+    const subject = 'Thay Đổi Mật Khẩu Thành Công'
+    const text = `Xin chào ${fullName || 'bạn'},\n\nMật khẩu của bạn đã được thay đổi thành công.\n\nNếu bạn không thực hiện hành động này, vui lòng liên hệ với chúng tôi ngay.\n\nTrân trọng,\nĐội ngũ GenUnity`
     const html = `
-      <h2>Password Changed</h2>
-      <p>Hello ${fullName || 'there'},</p>
-      <p>Your password was changed successfully.</p>
-      <p><strong>If you did not perform this action, please contact us immediately.</strong></p>
-      <p>Best regards,<br>GenUnity Team</p>
-    `
+  <h2>Thay Đổi Mật Khẩu</h2>
+  <p>Xin chào ${fullName || 'bạn'},</p>
+  <p>Mật khẩu của bạn đã được thay đổi thành công.</p>
+  <p><strong>Nếu bạn không thực hiện hành động này, vui lòng liên hệ với chúng tôi ngay lập tức.</strong></p>
+  <p>Trân trọng,<br>Đội ngũ GenUnity</p>
+`
+
     return await this.sendEmail({ to: email, subject, text, html })
   }
 
@@ -94,44 +95,45 @@ export class EmailService {
     registrationId: number,
     fullName?: string
   ): Promise<boolean> {
-    const subject = 'Test Results Available'
-    const text = `Hello ${fullName || 'there'},\n\nYour test results for ${serviceName} are ready.\nID: ${registrationId}\n\nPlease log in to download.\n\nBest regards,\nGenUnity Team`
+    const subject = 'Kết Quả Xét Nghiệm Đã Sẵn Sàng'
+    const text = `Xin chào ${fullName || 'bạn'},\n\nKết quả xét nghiệm của bạn cho dịch vụ ${serviceName} đã sẵn sàng.\nMã đăng ký: ${registrationId}\n\nVui lòng đăng nhập để tải xuống.\n\nTrân trọng,\nĐội ngũ GenUnity`
     const html = `
-      <h2>Test Results Ready</h2>
-      <p>Hello ${fullName || 'there'},</p>
-      <p>Your test results for <strong>${serviceName}</strong> are ready.</p>
-      <p><strong>Registration ID:</strong> ${registrationId}</p>
-      <p>Please log in to download.</p>
-      <p>Best regards,<br>GenUnity Team</p>
-    `
+  <h2>Kết Quả Xét Nghiệm Đã Sẵn Sàng</h2>
+  <p>Xin chào ${fullName || 'bạn'},</p>
+  <p>Kết quả xét nghiệm của bạn cho dịch vụ <strong>${serviceName}</strong> đã sẵn sàng.</p>
+  <p><strong>Mã đăng ký:</strong> ${registrationId}</p>
+  <p>Vui lòng đăng nhập để tải xuống.</p>
+  <p>Trân trọng,<br>Đội ngũ GenUnity</p>
+`
     return await this.sendEmail({ to: email, subject, text, html })
   }
 
   static async sendPasswordResetEmail(email: string, token: string, fullName?: string): Promise<boolean> {
     const resetUrl = `${process.env.CORS_ORIGIN || 'http://localhost:3000'}/reset-password?token=${token}`
-    const subject = 'Reset Your Password - GenUnity'
-    const text = `Hello ${fullName || 'there'},\n\nClick to reset: ${resetUrl}\n\nThis link expires in 15 minutes.`
+    const subject = 'Đặt Lại Mật Khẩu Của Bạn - GenUnity'
+    const text = `Xin Chào ${fullName || 'bạn'},\n\nNhấp vào để đặt lại: ${resetUrl}\n\nLink này sẽ hết hạn trong vòng 15 phút`
     const html = `
-      <h2>Reset Password</h2>
-      <p>Hello ${fullName || 'there'},</p>
-      <p>Click the link below to reset your password:</p>
-      <p><a href="${resetUrl}">${resetUrl}</a></p>
-      <p>This link will expire in 15 minutes.</p>
-      <p>Best regards,<br>GenUnity Team</p>
+  <h2>Đặt Lại Mật Khẩu</h2>
+  <p>Xin chào ${fullName || 'bạn'},</p>
+  <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu của bạn:</p>
+  <p><a href="${resetUrl}">${resetUrl}</a></p>
+  <p>Liên kết này sẽ hết hạn sau 15 phút.</p>
+  <p>Trân trọng,<br>Đội ngũ GenUnity</p>
+
     `
     return await this.sendEmail({ to: email, subject, text, html })
   }
 
   static async sendPasswordResetConfirmation(email: string, fullName?: string): Promise<boolean> {
-    const subject = 'Password Reset Successfully'
-    const text = `Hello ${fullName || 'there'},\n\nYour password was reset successfully.\n\nIf you did not do this, contact us immediately.\n\nBest regards,\nGenUnity Team`
+    const subject = 'Đặt Lại Mật Khẩu Thành Công'
+    const text = `Xin chào ${fullName || 'bạn'},\n\nMật khẩu của bạn đã được đặt lại thành công.\n\nNếu bạn không thực hiện hành động này, vui lòng liên hệ với chúng tôi ngay lập tức.\n\nTrân trọng,\nĐội ngũ GenUnity`
     const html = `
-      <h2>Password Reset Successful</h2>
-      <p>Hello ${fullName || 'there'},</p>
-      <p>Your password was reset successfully.</p>
-      <p><strong>If this was not you, please contact us immediately.</strong></p>
-      <p>Best regards,<br>GenUnity Team</p>
-    `
+  <h2>Đặt Lại Mật Khẩu Thành Công</h2>
+  <p>Xin chào ${fullName || 'bạn'},</p>
+  <p>Mật khẩu của bạn đã được đặt lại thành công.</p>
+  <p><strong>Nếu bạn không thực hiện hành động này, vui lòng liên hệ với chúng tôi ngay lập tức.</strong></p>
+  <p>Trân trọng,<br>Đội ngũ GenUnity</p>
+`
     return await this.sendEmail({ to: email, subject, text, html })
   }
 }
