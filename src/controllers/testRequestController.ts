@@ -6,6 +6,7 @@ import type { AuthRequest } from '../middlewares/authMiddleware'
 import { getDbPool } from '../config/database'
 import PDFDocument from 'pdfkit'
 import path from 'path'
+import fs from 'fs'
 
 // Đăng ký font tiếng Việt
 const registerFonts = (doc: PDFKit.PDFDocument) => {
@@ -301,24 +302,32 @@ class TestRequestController {
       doc.moveDown(2)
 
       // Cột trái: chữ và chữ ký ảnh
-      const leftX = 50
+      const leftX = 90
+      const rightX = 370
       const signatureTopY = doc.y
 
-      doc.font('Roboto').fontSize(11).text('Đại diện đơn vị xét nghiệm', leftX, signatureTopY)
+      doc.font('Roboto-Bold').fontSize(11).text('Nhân viên xử lý', leftX, signatureTopY)
       doc
         .font('Roboto')
         .fontSize(9)
         .text('(Ký, ghi rõ họ tên)', leftX, doc.y + 2)
 
+      // Cột phải: Đại diện công ty
+      doc.font('Roboto-Bold').fontSize(11).text('ĐẠI DIỆN CÔNG TY', rightX, signatureTopY)
+      doc
+        .font('Roboto')
+        .fontSize(9)
+        .text('(Ký, ghi rõ họ tên)', rightX, doc.y + 2)
+
       // Tọa độ để chèn ảnh sau dòng chữ
       const imageY = doc.y + 10
-
+      const leftXx = 75
       // === CHÈN ẢNH CHỮ KÝ STAFF ===
       const staffSig = staff.recordset[0]?.SignatureImage
       if (staffSig) {
         try {
           const buffer = decodeBase64Image(staffSig)
-          doc.image(buffer, leftX, imageY, {
+          doc.image(buffer, leftXx, imageY, {
             width: 100,
             height: 80
           })
@@ -327,11 +336,42 @@ class TestRequestController {
         }
       }
 
-      doc.moveDown(6)
+      // Thêm tên nhân viên xử lý
+      doc
+        .font('Roboto')
+        .fontSize(11)
+        .text(`${staff.recordset[0]?.FullName || 'Nhân viên xử lý'}`, leftX, imageY + 95)
 
-      // Ký tên và ngày tháng bên phải
-      doc.font('Roboto-Bold').fontSize(11).text('Staff – Gen Unity', 250)
-      doc.font('Roboto').text(`Ngày ${testDate}`, 250)
+      // === THÊM CON DẤU MỘC BẰNG HÌNH ẢNH ===
+      try {
+        const sealImagePath = path.resolve(__dirname, '../public/mocc.png')
+
+        // Kiểm tra xem file có tồn tại không
+        if (fs.existsSync(sealImagePath)) {
+          const sealX = 355
+          const sealY = signatureTopY + 30
+          const sealSize = 120
+
+          doc.image(sealImagePath, sealX, sealY, {
+            width: sealSize,
+            height: sealSize
+          })
+        } else {
+          console.error('Company seal image not found at:', sealImagePath)
+        }
+      } catch (error) {
+        console.error('Error loading company seal image:', error)
+      }
+
+      // Thêm tên giám đốc
+      doc
+        .font('Roboto-Bold')
+        .fontSize(11)
+        .text('Friedrich Miescher', rightX, imageY + 110)
+      doc
+        .font('Roboto')
+        .fontSize(11)
+        .text(`Ngày ${testDate}`, rightX, imageY + 125)
 
       doc.end()
     } catch (error) {
@@ -522,7 +562,7 @@ class TestRequestController {
       doc.text('(Ký, ghi rõ họ tên)', col2X, rowY + 15)
 
       // === CHÈN CHỮ KÝ NGAY DƯỚI CỘT ===
-   
+
       const imageWidth = 100
       const imageY = rowY + 35
 
