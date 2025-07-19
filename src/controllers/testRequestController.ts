@@ -115,26 +115,44 @@ class TestRequestController {
     res.status(200).json({ message: MESSAGES.TEST_REQUEST.TEST_REQUEST_COMPLETED, result })
     return
   })
+  checkDuplicateIdNumber = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    const { idNumber } = req.params
 
+    try {
+      const exists = await testRequestService.checkDuplicateIdNumber(idNumber)
+      res.status(200).json({ exists })
+    } catch (error) {
+      console.error('Error checking duplicate ID:', error)
+      res.status(500).json({ message: 'Error checking duplicate ID number' })
+    }
+  })
   submitSampleInfo = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { testRequestId } = req.params
     const userId = req.user?.accountId
 
     const { SampleType, TesterName, CMND, YOB, Gender, Relationship, File } = req.body
 
-    const result = await testRequestService.submitSampleInfoByCustomer(
-      Number(testRequestId),
-      userId,
-      SampleType,
-      TesterName,
-      CMND,
-      YOB,
-      Gender,
-      Relationship,
-      File
-    )
+    try {
+      const result = await testRequestService.submitSampleInfoByCustomer(
+        Number(testRequestId),
+        userId,
+        SampleType,
+        TesterName,
+        CMND,
+        YOB,
+        Gender,
+        Relationship,
+        File
+      )
 
-    res.status(200).json({ message: MESSAGES.TEST_REQUEST.SAMPLE_INFO_SUBMITTED, data: result })
+      res.status(200).json({ message: MESSAGES.TEST_REQUEST.SAMPLE_INFO_SUBMITTED, data: result })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('already exists')) {
+        res.status(400).json({ message: 'CMND/CCCD đã tồn tại trong hệ thống' })
+      } else {
+        res.status(500).json({ message: 'Có lỗi xảy ra khi lưu thông tin mẫu' })
+      }
+    }
   })
 
   getTestResults = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -287,19 +305,19 @@ class TestRequestController {
       doc.font('Roboto-Bold').text('')
 
       doc.font('Roboto')
-      doc.moveDown()
+
       doc.text('Mức độ thích được kết luận như sau:')
       doc.text('> 99%: Có quan hệ huyết thống cha/mẹ – con.')
       doc.text('85% – 99%: Có thể có quan hệ huyết thống gần (ví dụ: anh/chị em ruột, ông bà – cháu).')
       doc.text('25% – 85%: Có thể có quan hệ họ hàng (cô/chú/bác – cháu, anh em họ...).')
       doc.text('< 1%: Không có quan hệ huyết thống.')
 
-      doc.moveDown(3)
+      doc.moveDown(2)
 
       // === SIGNATURE SECTION ===
       doc.font('Roboto-Bold').text('XÁC NHẬN CỦA ĐƠN VỊ XÉT NGHIỆM')
       doc.text(`Kết quả xét nghiệm của bạn là : ${result.recordset[0].Result}.`)
-      doc.moveDown(2)
+      doc.moveDown(1)
 
       // Cột trái: chữ và chữ ký ảnh
       const leftX = 90

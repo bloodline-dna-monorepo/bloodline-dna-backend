@@ -118,11 +118,13 @@ class TestRequestService {
   s.Price,
   s.SampleCount,
   tr.AssignedTo,
-  th.KitID
+  th.KitID,
+  staff.FullName as StaffName
 FROM TestRequests tr
 INNER JOIN Services s ON tr.ServiceID = s.ServiceID
 LEFT JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID
 LEFT JOIN TestAtFacility tf ON tr.TestRequestID = tf.TestRequestID
+LEFT JOIN UserProfiles staff ON tr.AssignedTo = staff.AccountID
 WHERE tr.AccountID = @id
 ORDER BY tr.CreatedAt DESC
       `)
@@ -241,7 +243,20 @@ ORDER BY tr.CreatedAt DESC
 
     return await this.getTestRequestById(testRequestId)
   }
+async checkDuplicateIdNumber(idNumber: string): Promise<boolean> {
+    const connection = await getDbPool()
 
+    const result = await connection
+      .request()
+      .input("idNumber", idNumber)
+      .query(`
+        SELECT COUNT(*) as count 
+        FROM SampleCategories 
+        WHERE CMND = @idNumber
+      `)
+
+    return result.recordset[0].count > 0
+  }
   async submitSampleInfoByCustomer(
     testRequestId: number,
     userId: number | undefined,
@@ -260,7 +275,11 @@ ORDER BY tr.CreatedAt DESC
     if (!testRequest || testRequest.AccountID !== userId) {
       throw new Error('Unauthorized access to test request')
     }
-
+    // Check if CMND/CCCD already exists
+    const isDuplicate = await this.checkDuplicateIdNumber(CMND)
+    if (isDuplicate) {
+      throw new Error("CMND/CCCD already exists in the system")
+    }
     // Update test request status
     await connection
       .request()

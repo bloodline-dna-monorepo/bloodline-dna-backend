@@ -55,4 +55,7 @@ router.put(
 
 router.get('/:testRequestId/results', authenticate, testRequestController.getTestResults)
 
+// Check duplicate ID number
+router.get("/check-duplicate-id/:idNumber", authenticate, testRequestController.checkDuplicateIdNumber)
+
 export { router as testRequestRoutes }

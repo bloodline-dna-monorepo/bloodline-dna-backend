@@ -187,7 +187,22 @@ WHERE tr_result.TestResultID = @testResultId
         ConfirmDate = GETDATE()
     WHERE TestResultID = @testResultId
   `)
+    // Lấy TestRequestID để cập nhật trạng thái TestRequest
+    const testRequestIdResult = await pool.request().input('testResultId', testResultId).query(`
+      SELECT TestRequestID
+      FROM TestResults
+      WHERE TestResultID = @testResultId
+    `)
 
+    const testRequestId = testRequestIdResult.recordset[0]?.TestRequestID
+    if (testRequestId) {
+      // Cập nhật trạng thái TestRequest thành Completed
+      await pool.request().input('requestId', testRequestId).query(`
+        UPDATE TestRequests
+        SET Status = 'Completed'
+        WHERE TestRequestID = @requestId
+      `)
+    }
     // Truy vấn thông tin liên quan để gửi email
     const result = await pool.request().input('testResultId', testResultId).query(`
     SELECT 
