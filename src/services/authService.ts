@@ -1,9 +1,9 @@
-import bcrypt from 'bcrypt'
-import { getDbPool } from '../config/database'
-import jwt from 'jsonwebtoken'
-import { config } from '../config/config'
-import { EmailService } from '../utils/email'
-import { PasswordActionResult } from '../types/type'
+import bcrypt from "bcrypt"
+import { getDbPool } from "../config/database"
+import jwt from "jsonwebtoken"
+import { config } from "../config/config"
+import { EmailService } from "../utils/email"
+import type { PasswordActionResult } from "../types/type"
 
 export const register = async (
   email: string,
@@ -13,13 +13,13 @@ export const register = async (
   phoneNumber: string,
   address: string,
   dateOfBirth: string,
-  signatureImage: string
+  signatureImage: string,
 ) => {
   // Kiểm tra mật khẩu (độ dài 6-12 ký tự)
 
   // Kiểm tra mật khẩu trùng khớp
   if (password !== confirmpassword) {
-    throw new Error('Mật khẩu không trùng khớp')
+    throw new Error("Mật khẩu không trùng khớp")
   }
 
   // Kiểm tra định dạng email
@@ -27,21 +27,27 @@ export const register = async (
   const pool = await getDbPool()
 
   // Kiểm tra nếu email đã tồn tại trong bảng Accounts
-  const result = await pool.request().input('email', email).query(`
-    SELECT Email FROM Accounts WHERE Email = @Email
-  `)
+  const result = await pool
+    .request()
+    .input("email", email)
+    .query(`
+   SELECT Email FROM Accounts WHERE Email = @Email
+ `)
 
   if (result.recordset.length > 0) {
-    throw new Error('Email đã tồn tại')
+    throw new Error("Email đã tồn tại")
   }
 
   // Lấy role "Customer" từ bảng Roles
-  const roleAcc = await pool.request().input('name', 'Customer').query(`
-    SELECT * FROM Roles WHERE RoleName = @name
-  `)
+  const roleAcc = await pool
+    .request()
+    .input("name", "Customer")
+    .query(`
+   SELECT * FROM Roles WHERE RoleName = @name
+ `)
 
   if (roleAcc.recordset.length === 0) {
-    throw new Error('Role không tồn tại')
+    throw new Error("Role không tồn tại")
   }
 
   const role = roleAcc.recordset[0]
@@ -52,27 +58,30 @@ export const register = async (
   // Lưu tài khoản vào cơ sở dữ liệu
   const i = await pool
     .request()
-    .input('email', email)
-    .input('password', passwordHash) // Lưu mật khẩu đã mã hóa
-    .input('role_id', role.RoleID) // Dùng RoleID thay vì role_name
+    .input("email", email)
+    .input("password", passwordHash) // Lưu mật khẩu đã mã hóa
+    .input("role_id", role.RoleID) // Dùng RoleID thay vì role_name
     .query(`
-      INSERT INTO Accounts (Email, PasswordHash, RoleID)
-      VALUES (@email, @password, @role_id)
-    `)
+     INSERT INTO Accounts (Email, PasswordHash, RoleID)
+     VALUES (@email, @password, @role_id)
+   `)
 
   // Lấy thông tin account vừa tạo
-  const createdAccount = await pool.request().input('email', email).query(`
-      SELECT * FROM Accounts WHERE Email = @email`)
+  const createdAccount = await pool
+    .request()
+    .input("email", email)
+    .query(`
+     SELECT * FROM Accounts WHERE Email = @email`)
   await pool
     .request()
-    .input('Acid', createdAccount.recordset[0].AccountID)
-    .input('name', fullname)
-    .input('Phone', phoneNumber)
-    .input('Address', address)
-    .input('DateOfBirth', dateOfBirth)
-    .input('SignatureImage', signatureImage)
+    .input("Acid", createdAccount.recordset[0].AccountID)
+    .input("name", fullname)
+    .input("Phone", phoneNumber)
+    .input("Address", address)
+    .input("DateOfBirth", dateOfBirth)
+    .input("SignatureImage", signatureImage)
     .query(
-      'Insert into UserProfiles(AccountID,FullName,PhoneNumber,Address,DateOfBirth,SignatureImage) VALUES (@Acid,@name,@Phone,@Address,@DateOfBirth,@SignatureImage)'
+      "Insert into UserProfiles(AccountID,FullName,PhoneNumber,Address,DateOfBirth,SignatureImage) VALUES (@Acid,@name,@Phone,@Address,@DateOfBirth,@SignatureImage)",
     )
   return createdAccount.recordset[0]
 }
@@ -81,12 +90,15 @@ export const login = async (email: string, password: string) => {
   const pool = await getDbPool()
 
   // Lấy thông tin tài khoản và role
-  const result = await pool.request().input('email', email).query(`
-      SELECT a.AccountID, a.Email, a.PasswordHash, r.RoleName AS role_name 
-      FROM Accounts a
-      JOIN Roles r ON a.RoleID = r.RoleID
-      WHERE a.Email = @email
-    `)
+  const result = await pool
+    .request()
+    .input("email", email)
+    .query(`
+     SELECT a.AccountID, a.Email, a.PasswordHash, r.RoleName AS role_name 
+     FROM Accounts a
+     JOIN Roles r ON a.RoleID = r.RoleID
+     WHERE a.Email = @email
+   `)
 
   if (result.recordset.length === 0) return null
 
@@ -100,7 +112,7 @@ export const login = async (email: string, password: string) => {
   const payload = {
     accountId: user.AccountID,
     email: user.Email,
-    role: user.role_name
+    role: user.role_name,
   }
 
   const accessToken = generateAccessToken(payload)
@@ -110,7 +122,7 @@ export const login = async (email: string, password: string) => {
 }
 
 // Thời gian hết hạn của các token
-const ACCESS_TOKEN_EXPIRES_IN = '1m'
+const ACCESS_TOKEN_EXPIRES_IN = "1m"
 const REFRESH_TOKEN_EXPIRES_IN = 7 * 24 * 60 * 60 * 1000 // 7 ngày
 
 // Tạo interface cho payload của token
@@ -139,14 +151,15 @@ export const generateRefreshToken = async (payload: Payload): Promise<string> =>
     // Thêm refresh token vào database
     await pool
       .request()
-      .input('token', refreshToken)
-      .input('accountId', payload.accountId)
-      .input('expiresAt', expiresAt).query(`
-        INSERT INTO RefreshTokens (Token, AccountID, ExpiresAt)
-        VALUES (@token, @accountId, @expiresAt)
-      `)
+      .input("token", refreshToken)
+      .input("accountId", payload.accountId)
+      .input("expiresAt", expiresAt)
+      .query(`
+       INSERT INTO RefreshTokens (Token, AccountID, ExpiresAt)
+       VALUES (@token, @accountId, @expiresAt)
+     `)
   } catch (error) {
-    throw new Error('Error saving refresh token to the database')
+    throw new Error("Error saving refresh token to the database")
   }
 
   return refreshToken
@@ -154,7 +167,7 @@ export const generateRefreshToken = async (payload: Payload): Promise<string> =>
 
 // Xác minh Refresh Token
 export const verifyRefreshToken = async (
-  refreshToken: string
+  refreshToken: string,
 ): Promise<{ accountId: number; email: string; role: string } | null> => {
   const pool = await getDbPool()
 
@@ -162,8 +175,8 @@ export const verifyRefreshToken = async (
     // Kiểm tra nếu token tồn tại và chưa bị thu hồi
     const result = await pool
       .request()
-      .input('token', refreshToken)
-      .query('SELECT TOP 1 * FROM RefreshTokens WHERE token = @token AND revoked = 0')
+      .input("token", refreshToken)
+      .query("SELECT TOP 1 * FROM RefreshTokens WHERE token = @token AND revoked = 0")
 
     if (result.recordset.length === 0) return null
 
@@ -177,12 +190,15 @@ export const verifyRefreshToken = async (
     const decoded = jwt.verify(refreshToken, config.jwt.secret) as { accountId: number; email: string; role: string }
 
     // Lấy thông tin người dùng
-    const userResult = await pool.request().input('accountId', decoded.accountId).query(`
-        SELECT a.email, r.RoleName AS role 
-        FROM Accounts a
-        JOIN Roles r ON a.RoleID = r.RoleID
-        WHERE a.AccountID = @accountId
-      `)
+    const userResult = await pool
+      .request()
+      .input("accountId", decoded.accountId)
+      .query(`
+       SELECT a.email, r.RoleName AS role 
+       FROM Accounts a
+       JOIN Roles r ON a.RoleID = r.RoleID
+       WHERE a.AccountID = @accountId
+     `)
 
     if (userResult.recordset.length === 0) return null
     const user = userResult.recordset[0]
@@ -191,10 +207,10 @@ export const verifyRefreshToken = async (
     return {
       accountId: decoded.accountId,
       email: decoded.email,
-      role: decoded.role
+      role: decoded.role,
     }
   } catch (error) {
-    console.error('Error verifying refresh token:', error)
+    console.error("Error verifying refresh token:", error)
     return null
   }
 }
@@ -205,9 +221,9 @@ export const revokeRefreshToken = async (token: string): Promise<void> => {
 
   try {
     // Cập nhật trạng thái revoked của token
-    await pool.request().input('token', token).query('UPDATE RefreshToken SET revoked = 1 WHERE token = @token')
+    await pool.request().input("token", token).query("UPDATE RefreshToken SET revoked = 1 WHERE token = @token")
   } catch (error) {
-    throw new Error('Error revoking refresh token')
+    throw new Error("Error revoking refresh token")
   }
 }
 
@@ -217,11 +233,11 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
   // Kiểm tra nếu người dùng tồn tại
   const Result = await pool
     .request()
-    .input('userId', userId)
-    .query('SELECT PasswordHash, Email FROM Accounts WHERE AccountID = @userId') // Chỉnh lại id thành AccountID
+    .input("userId", userId)
+    .query("SELECT PasswordHash, Email FROM Accounts WHERE AccountID = @userId") // Chỉnh lại id thành AccountID
 
   if (Result.recordset.length === 0) {
-    throw new Error('Account not found')
+    throw new Error("Account not found")
   }
 
   const user = Result.recordset[0]
@@ -229,18 +245,18 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
   // Kiểm tra mật khẩu cũ có chính xác không
   const match = await bcrypt.compare(password, user.PasswordHash) // Sử dụng await để chờ kết quả
   if (!match) {
-    throw new Error('Old password is wrong')
+    throw new Error("Old password is wrong")
   }
 
   // Kiểm tra mật khẩu mới có hợp lệ không
   const passwordregex = /^.{6,12}$/
   if (!passwordregex.test(newPassword)) {
-    throw new Error('New password must be between 6 and 12 characters')
+    throw new Error("New password must be between 6 and 12 characters")
   }
 
   // Kiểm tra mật khẩu mới không trùng với mật khẩu cũ
   if (password === newPassword) {
-    throw new Error('New password cannot be the same as the old password')
+    throw new Error("New password cannot be the same as the old password")
   }
 
   // Mã hóa mật khẩu mới
@@ -250,18 +266,18 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
     // Cập nhật mật khẩu mới trong bảng Accounts
     await pool
       .request()
-      .input('userId', userId)
-      .input('newPasswordHash', newPasswordHash)
-      .query('UPDATE Accounts SET PasswordHash = @newPasswordHash WHERE AccountID = @userId')
+      .input("userId", userId)
+      .input("newPasswordHash", newPasswordHash)
+      .query("UPDATE Accounts SET PasswordHash = @newPasswordHash WHERE AccountID = @userId")
 
-    return { message: 'Password change is successful' }
+    return { message: "Password change is successful" }
   } catch (error: unknown) {
     if (error instanceof Error) {
       // Xử lý lỗi với message từ Error object
-      throw new Error('Error updating password: ' + error.message)
+      throw new Error("Error updating password: " + error.message)
     } else {
       // Nếu lỗi không phải là Error object, thông báo lỗi chung
-      throw new Error('Error updating password: Unknown error')
+      throw new Error("Error updating password: Unknown error")
     }
   }
 }
@@ -271,15 +287,18 @@ export const forgotPassword = async (email: string): Promise<PasswordActionResul
 
   try {
     // Kiểm tra email có tồn tại không
-    const result = await pool.request().input('email', email).query(`
-      SELECT a.AccountID, a.Email, up.FullName 
-      FROM Accounts a
-      LEFT JOIN UserProfiles up ON a.AccountID = up.AccountID
-      WHERE a.Email = @email
-    `)
+    const result = await pool
+      .request()
+      .input("email", email)
+      .query(`
+     SELECT a.AccountID, a.Email, up.FullName 
+     FROM Accounts a
+     LEFT JOIN UserProfiles up ON a.AccountID = up.AccountID
+     WHERE a.Email = @email
+   `)
 
     if (result.recordset.length === 0) {
-      return { success: false, message: 'Email không tồn tại trong hệ thống' }
+      return { success: false, message: "Email không tồn tại trong hệ thống" }
     }
 
     const user = result.recordset[0]
@@ -289,26 +308,25 @@ export const forgotPassword = async (email: string): Promise<PasswordActionResul
       {
         accountId: user.AccountID,
         email: user.Email,
-        type: 'password_reset'
+        type: "password_reset",
       },
       config.jwt.secret,
-      { expiresIn: '15m' }
+      { expiresIn: "15m" },
     )
 
-    // Tạo reset URL
-    const resetUrl = `${config.cors.origin}/reset-password?token=${resetToken}`
+    console.log("Generated reset token:", resetToken)
 
-    // Gửi email
-    const emailSent = await EmailService.sendPasswordResetEmail(user.Email, resetUrl, user.FullName)
+    // Gửi email với token gốc (không encode)
+    const emailSent = await EmailService.sendPasswordResetEmail(user.Email, resetToken, user.FullName)
 
     if (!emailSent) {
-      return { success: false, message: 'Không thể gửi email khôi phục mật khẩu' }
+      return { success: false, message: "Không thể gửi email khôi phục mật khẩu" }
     }
 
-    return { success: true, message: 'Email khôi phục mật khẩu đã được gửi' }
+    return { success: true, message: "Email khôi phục mật khẩu đã được gửi" }
   } catch (error) {
-    console.error('Error in forgotPassword:', error)
-    return { success: false, message: 'Đã xảy ra lỗi khi xử lý yêu cầu khôi phục mật khẩu' }
+    console.error("Error in forgotPassword:", error)
+    return { success: false, message: "Đã xảy ra lỗi khi xử lý yêu cầu khôi phục mật khẩu" }
   }
 }
 
@@ -316,50 +334,64 @@ export const resetPassword = async (token: string, newPassword: string): Promise
   const pool = await getDbPool()
 
   try {
-    // Xác minh token
+    console.log("Received token for reset:", token)
+
+    // Xác minh token trực tiếp
     const decoded = jwt.verify(token, config.jwt.secret) as {
       accountId: number
       email: string
       type: string
     }
 
-    if (decoded.type !== 'password_reset') {
-      return { success: false, message: 'Token không hợp lệ hoặc sai mục đích' }
+    console.log("Decoded token:", decoded)
+
+    if (decoded.type !== "password_reset") {
+      return { success: false, message: "Token không hợp lệ hoặc sai mục đích" }
     }
 
-    const userResult = await pool.request().input('accountId', decoded.accountId).query(`
-      SELECT AccountID, Email FROM Accounts WHERE AccountID = @accountId
-    `)
+    const userResult = await pool
+      .request()
+      .input("accountId", decoded.accountId)
+      .query(`
+     SELECT AccountID, Email FROM Accounts WHERE AccountID = @accountId
+   `)
 
     if (userResult.recordset.length === 0) {
-      return { success: false, message: 'Tài khoản không tồn tại' }
+      return { success: false, message: "Tài khoản không tồn tại" }
     }
 
-    // Validate mật khẩu ở đây nếu muốn thêm (nếu chưa validate ở controller)
+    // Validate mật khẩu
+    const passwordregex = /^.{6,12}$/
+    if (!passwordregex.test(newPassword)) {
+      return { success: false, message: "Mật khẩu phải có độ dài từ 6 đến 12 ký tự" }
+    }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10)
 
     await pool
       .request()
-      .input('accountId', decoded.accountId)
-      .input('hashedPassword', hashedPassword)
-      .query('UPDATE Accounts SET PasswordHash = @hashedPassword WHERE AccountID = @accountId')
+      .input("accountId", decoded.accountId)
+      .input("hashedPassword", hashedPassword)
+      .query("UPDATE Accounts SET PasswordHash = @hashedPassword WHERE AccountID = @accountId")
 
     const user = userResult.recordset[0]
-    const userProfileResult = await pool.request().input('accountId', decoded.accountId).query(`
-      SELECT FullName FROM UserProfiles WHERE AccountID = @accountId
-    `)
+    const userProfileResult = await pool
+      .request()
+      .input("accountId", decoded.accountId)
+      .query(`
+     SELECT FullName FROM UserProfiles WHERE AccountID = @accountId
+   `)
 
     const fullName = userProfileResult.recordset.length > 0 ? userProfileResult.recordset[0].FullName : null
     await EmailService.sendPasswordChangeNotification(user.Email, fullName)
 
-    return { success: true, message: 'Mật khẩu đã được đặt lại thành công' }
+    return { success: true, message: "Mật khẩu đã được đặt lại thành công" }
   } catch (error) {
-    console.error('Error in resetPassword:', error)
+    console.error("Error in resetPassword:", error)
     if (error instanceof jwt.JsonWebTokenError) {
-      return { success: false, message: 'Token không hợp lệ hoặc đã hết hạn' }
+      return { success: false, message: "Token không hợp lệ hoặc đã hết hạn" }
     }
 
-    return { success: false, message: 'Đã xảy ra lỗi khi đặt lại mật khẩu' }
+    return { success: false, message: "Đã xảy ra lỗi khi đặt lại mật khẩu" }
   }
 }
