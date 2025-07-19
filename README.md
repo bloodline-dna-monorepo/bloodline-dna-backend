@@ -1,148 +1,204 @@
-# Bloodline DNA Testing Service - Backend
+# Bloodline DNA Backend
 
-## Giới thiệu
+A comprehensive DNA testing service backend built with Node.js, Express, and TypeScript.
 
-Đây là backend của hệ thống quản lý dịch vụ xét nghiệm ADN huyết thống, được xây dựng trên nền tảng Node.js, TypeScript, Express, Prisma và MySQL.
+## 🚀 Features
 
----
+- **Authentication & Authorization**: JWT-based authentication with role-based access control
+- **User Management**: Support for multiple user roles (Admin, Manager, Staff, Customer)
+- **DNA Test Management**: Complete workflow for DNA test requests and processing
+- **Payment Integration**: VNPay payment gateway integration
+- **Email Services**: Automated email notifications
+- **File Management**: PDF report generation and file handling
+- **Database**: MySQL database with proper relationships
 
-## Cấu trúc dự án
+## 🛠 Tech Stack
 
-```
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Language**: TypeScript
+- **Database**: MySQL
+- **Authentication**: JWT (JSON Web Tokens)
+- **Payment**: VNPay
+- **Email**: Nodemailer
+- **PDF Generation**: Custom PDF utilities
+- **Development**: Nodemon for hot reloading
 
-bloodline-backend/
-├── src/
-│   ├── config/         # Cấu hình môi trường, database, biến toàn cục
-│   ├── constants/      # Các hằng số dùng chung trong dự án
-│   ├── controllers/    # Xử lý logic request, response cho từng route
-│   ├── middlewares/    # Middleware Express (xác thực, xử lý lỗi,...)
-│   ├── models/         # Định nghĩa model, interface, kiểu dữ liệu
-│   ├── prisma/         # Schema Prisma và client Prisma
-│   ├── routes/         # Định nghĩa các route API
-│   ├── services/       # Xử lý business logic tách biệt controller
-│   ├── tests/          # Code test unit, integration
-│   ├── utils/          # Các hàm tiện ích dùng chung
-│   ├── app.ts          # Cấu hình Express app, middleware, route
-│   ├── index.ts       # File entry point chạy server
-│   └── type.d.ts       # Khai báo type mở rộng nếu cần
-├── .env                # Biến môi trường (không commit lên git)
-├── .gitignore          # Các file, thư mục git sẽ bỏ qua
-├── package.json        # Thông tin project & dependencies
-├── tsconfig.json       # Cấu hình TypeScript
-├── nodemon.json        # Cấu hình nodemon cho chạy dev
-├── yarn.lock           # Khóa version dependencies
-└── README.md           # File hướng dẫn này
+## 📁 Project Structure
 
-```
+\`\`\`
+src/
+├── config/ # Database and app configuration
+├── constants/ # Application constants and enums
+├── controllers/ # Route controllers
+├── middlewares/ # Custom middlewares
+├── routes/ # API routes
+├── services/ # Business logic layer
+├── utils/ # Utility functions
+├── types/ # TypeScript type definitions
+├── fonts/ # Font files for PDF generation
+└── public/ # Static assets
+\`\`\`
 
----
+## 🚦 Getting Started
 
-## Cài đặt và chạy project
+### Prerequisites
 
-### Yêu cầu
+- Node.js (v14 or higher)
+- MySQL database
+- npm or yarn package manager
 
-- Node.js phiên bản >= 16
-- Yarn package manager
-- MySQL server đang chạy và có database cho project
+### Installation
 
-### Các bước
+1. Clone the repository:
+   \`\`\`bash
+   git clone <repository-url>
+   cd bloodline-dna-backend
+   \`\`\`
 
-1. Clone repo backend về máy
+2. Install dependencies:
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-```bash
-git clone <url-repo-backend>
-cd bloodline-backend
-```
+3. Set up environment variables:
+   Create a \`.env\` file in the root directory with the following variables:
 
-2. Cài dependencies
+\`\`\`env
 
-```bash
-yarn install
-```
+# Database Configuration
 
-3. Tạo file `.env` ở gốc dự án dựa trên mẫu `.env.example` (nếu có), ví dụ:
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=bloodline_dna
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
 
-```
-DATABASE_URL="mysql://user:password@localhost:3306/bloodline_db"
-PORT=4000
-JWT_SECRET=your_secret_key
-```
+# JWT Configuration
 
-4. Khởi tạo database và Prisma migration
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=24h
 
-```bash
-npx prisma migrate dev --name init
-```
+# Email Configuration
 
-5. Chạy server trong môi trường dev
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASSWORD=your_email_password
 
-```bash
-yarn dev
-```
+# VNPay Configuration
 
-Server sẽ chạy mặc định trên cổng 4000 (hoặc port trong `.env`)
+VNPAY_TMN_CODE=your_vnpay_tmn_code
+VNPAY_SECRET_KEY=your_vnpay_secret_key
+VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+VNPAY_RETURN_URL=http://localhost:3000/payment/vnpay-return
 
----
+# Server Configuration
 
-## Giải thích các file quan trọng
+PORT=5000
+NODE_ENV=development
+\`\`\`
 
-- **app.ts**: cấu hình Express app, thêm middleware, khai báo route
-- **server.ts**: khởi động server, listen cổng
-- **prisma/schema.prisma**: mô hình dữ liệu, schema DB
-- **controllers/**: nhận request, gọi services xử lý, trả response
-- **services/**: xử lý nghiệp vụ, tương tác DB qua Prisma Client
-- **middlewares/**: xác thực token, xử lý lỗi, logger
-- **routes/**: định nghĩa API endpoint, map controller tương ứng
+4. Set up the database:
+   \`\`\`bash
 
----
+# Import the database schema
 
-## Quy trình Git và quản lý nhánh
+mysql -u your_username -p bloodline_dna < Blooddatabase.sql
+\`\`\`
 
-Để giữ cho code sạch và dễ quản lý, làm theo các quy tắc nhánh sau:
+5. Start the development server:
+   \`\`\`bash
+   npm run dev
+   \`\`\`
 
-- **main**: nhánh chính, luôn là bản production ổn định, chỉ merge code đã review, test kỹ
-- **develop**: nhánh phát triển tổng, hợp các feature hoàn chỉnh và test ổn định
-- **feature/\<tên-feature>**: các nhánh phát triển tính năng riêng lẻ, tách ra từ develop
+The server will start on \`http://localhost:5000\`
 
-### Ví dụ workflow
+## 📚 API Documentation
 
-1. Từ nhánh **develop**, tạo nhánh feature mới:
+### Authentication Endpoints
 
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/api-authentication
-```
+- \`POST /api/auth/register\` - User registration
+- \`POST /api/auth/login\` - User login
+- \`POST /api/auth/forgot-password\` - Request password reset
+- \`POST /api/auth/reset-password\` - Reset password
 
-2. Code và commit thường xuyên, với message rõ ràng:
+### User Management
 
-```bash
-git add .
-git commit -m "Implement user login with JWT authentication"
-```
+- \`GET /api/users/profile\` - Get user profile
+- \`PUT /api/users/profile\` - Update user profile
+- \`GET /api/users/history\` - Get user service history
 
-3. Push lên remote:
+### Test Request Management
 
-```bash
-git push origin feature/api-authentication
-```
+- \`POST /api/test-requests\` - Create new test request
+- \`GET /api/test-requests\` - Get test requests (filtered by role)
+- \`PUT /api/test-requests/:id/status\` - Update test request status
+- \`GET /api/test-requests/:id/result\` - Get test result
 
-4. Tạo Pull Request (PR) từ **feature/api-authentication** vào **develop**, yêu cầu review từ team
+### Admin Endpoints
 
-5. Sau khi được review & test ổn, merge PR vào **develop**
+- \`GET /api/admin/users\` - Get all users
+- \`PUT /api/admin/users/:id/role\` - Update user role
+- \`GET /api/admin/statistics\` - Get system statistics
 
-6. Đến cuối sprint hoặc khi release, merge **develop** vào **main** và deploy
+### Manager Endpoints
 
----
+- \`GET /api/manager/test-results\` - Manage test results
+- \`POST /api/manager/blogs\` - Create blog posts
+- \`GET /api/manager/feedback\` - View customer feedback
 
-## Hỗ trợ và liên hệ
+### Staff Endpoints
 
-- Mọi thắc mắc, lỗi, đề xuất vui lòng liên hệ nhóm trưởng hoặc tạo issue trên repo.
+- \`GET /api/staff/requests\` - Get assigned test requests
+- \`PUT /api/staff/requests/:id/process\` - Process test request
+- \`POST /api/staff/requests/:id/result\` - Submit test result
 
----
+### Payment Endpoints
 
-## Ghi chú
+- \`POST /api/payment/create\` - Create payment
+- \`GET /api/payment/vnpay-return\` - Handle VNPay return
 
-- Tuyệt đối không commit file `.env` lên git để bảo mật thông tin
-- Luôn chạy test trước khi push code
-- Tuân thủ quy chuẩn code và commit message
+## 🔧 Available Scripts
+
+- \`npm run dev\` - Start development server with hot reload
+- \`npm run build\` - Build the TypeScript project
+- \`npm start\` - Start production server
+- \`npm run lint\` - Run ESLint
+- \`npm test\` - Run tests
+
+## 🏗 Database Schema
+
+The application uses MySQL with the following main tables:
+
+- \`users\` - User accounts and profiles
+- \`test_requests\` - DNA test requests
+- \`test_results\` - Test results and reports
+- \`services\` - Available DNA testing services
+- \`payments\` - Payment transactions
+- \`feedback\` - Customer feedback
+- \`blogs\` - Blog posts and articles
+
+## 🔐 Authentication & Authorization
+
+The API uses JWT tokens for authentication. Include the token in the Authorization header:
+
+\`\`\`
+Authorization: Bearer <your-jwt-token>
+\`\`\`
+
+### User Roles:
+
+- **Admin**: Full system access
+- **Manager**: Manage test results, blogs, and feedback
+- **Staff**: Process test requests and submit results
+- **Customer**: Create test requests and view results
+
+## 🚀 Deployment
+
+### Production Build
+
+\`\`\`bash
+npm run build
+npm start
+\`\`\`
