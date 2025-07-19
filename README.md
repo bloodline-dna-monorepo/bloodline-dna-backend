@@ -26,7 +26,7 @@ A comprehensive DNA testing service backend built with Node.js, Express, and Typ
 
 ## 📁 Project Structure
 
-\`\`\`
+```bash
 src/
 ├── config/ # Database and app configuration
 ├── constants/ # Application constants and enums
@@ -38,7 +38,7 @@ src/
 ├── types/ # TypeScript type definitions
 ├── fonts/ # Font files for PDF generation
 └── public/ # Static assets
-\`\`\`
+```
 
 ## 🚦 Getting Started
 
