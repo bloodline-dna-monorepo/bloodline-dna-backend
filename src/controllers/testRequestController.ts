@@ -362,7 +362,7 @@ class TestRequestController {
 
       // === THÊM CON DẤU MỘC BẰNG HÌNH ẢNH ===
       try {
-        const sealImagePath = path.resolve(__dirname, '../public/mocc.png')
+        const sealImagePath = path.resolve(__dirname, '../../public/mocc.png')
 
         // Kiểm tra xem file có tồn tại không
         if (fs.existsSync(sealImagePath)) {
