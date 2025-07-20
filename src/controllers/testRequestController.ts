@@ -361,35 +361,35 @@ class TestRequestController {
         .text(`${staff.recordset[0]?.FullName || 'Nhân viên xử lý'}`, leftX, imageY + 95)
 
       // === THÊM CON DẤU MỘC BẰNG HÌNH ẢNH ===
-      // try {
-      //   const sealImagePath = path.resolve(__dirname, '../../public/mocc.png')
+      try {
+        const sealImagePath = path.resolve(__dirname, '../../public/mocc.png')
 
-      //   // Kiểm tra xem file có tồn tại không
-      //   if (fs.existsSync(sealImagePath)) {
-      //     const sealX = 355
-      //     const sealY = signatureTopY + 30
-      //     const sealSize = 120
+        // Kiểm tra xem file có tồn tại không
+        if (fs.existsSync(sealImagePath)) {
+          const sealX = 355
+          const sealY = signatureTopY + 30
+          const sealSize = 120
 
-      //     doc.image(sealImagePath, sealX, sealY, {
-      //       width: sealSize,
-      //       height: sealSize
-      //     })
-      //   } else {
-      //     console.error('Company seal image not found at:', sealImagePath)
-      //   }
-      // } catch (error) {
-      //   console.error('Error loading company seal image:', error)
-      // }
+          doc.image(sealImagePath, sealX, sealY, {
+            width: sealSize,
+            height: sealSize
+          })
+        } else {
+          console.error('Company seal image not found at:', sealImagePath)
+        }
+      } catch (error) {
+        console.error('Error loading company seal image:', error)
+      }
 
-      // // Thêm tên giám đốc
-      // doc
-      //   .font('Roboto-Bold')
-      //   .fontSize(11)
-      //   .text('Friedrich Miescher', rightX, imageY + 110)
-      // doc
-      //   .font('Roboto')
-      //   .fontSize(11)
-      //   .text(`Ngày ${testDate}`, rightX, imageY + 125)
+      // Thêm tên giám đốc
+      doc
+        .font('Roboto-Bold')
+        .fontSize(11)
+        .text('Friedrich Miescher', rightX, imageY + 110)
+      doc
+        .font('Roboto')
+        .fontSize(11)
+        .text(`Ngày ${testDate}`, rightX, imageY + 125)
 
       doc.end()
     } catch (error) {
