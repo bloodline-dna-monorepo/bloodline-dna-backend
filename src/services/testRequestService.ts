@@ -243,20 +243,7 @@ ORDER BY tr.CreatedAt DESC
 
     return await this.getTestRequestById(testRequestId)
   }
-async checkDuplicateIdNumber(idNumber: string): Promise<boolean> {
-    const connection = await getDbPool()
 
-    const result = await connection
-      .request()
-      .input("idNumber", idNumber)
-      .query(`
-        SELECT COUNT(*) as count 
-        FROM SampleCategories 
-        WHERE CMND = @idNumber
-      `)
-
-    return result.recordset[0].count > 0
-  }
   async submitSampleInfoByCustomer(
     testRequestId: number,
     userId: number | undefined,
@@ -275,11 +262,7 @@ async checkDuplicateIdNumber(idNumber: string): Promise<boolean> {
     if (!testRequest || testRequest.AccountID !== userId) {
       throw new Error('Unauthorized access to test request')
     }
-    // Check if CMND/CCCD already exists
-    const isDuplicate = await this.checkDuplicateIdNumber(CMND)
-    if (isDuplicate) {
-      throw new Error("CMND/CCCD already exists in the system")
-    }
+ 
     // Update test request status
     await connection
       .request()
@@ -386,30 +369,30 @@ async checkDuplicateIdNumber(idNumber: string): Promise<boolean> {
 
     return Buffer.from(pdfContent, 'utf8')
   }
-  async VerifytestResultByManager(testResultId: number, managerId: number | undefined) {
-    const connection = await getDbPool()
-    const update = await connection
-      .request()
-      .input('id', testResultId)
-      .input('Mid', managerId)
-      .input('status', 'Verified')
-      .query('Update TestResults Set ConfirmBy = @Mid, Status = @status WHERE TestResultID = @id')
+  // async VerifytestResultByManager(testResultId: number, managerId: number | undefined) {
+  //   const connection = await getDbPool()
+  //   const update = await connection
+  //     .request()
+  //     .input('id', testResultId)
+  //     .input('Mid', managerId)
+  //     .input('status', 'Verified')
+  //     .query('Update TestResults Set ConfirmBy = @Mid, Status = @status WHERE TestResultID = @id')
 
-    const result = await connection
-      .request()
-      .input('id', testResultId)
-      .query('SELECT * From TestResults WHERE TestResultID = @id')
-    const updatereq = await connection
-      .request()
-      .input('testRequestId', result.recordset[0].TestRequestID)
-      .input('status', 'Completed').query(`
-        UPDATE TestRequests 
-        SET Status = @status,
-            UpdatedAt = GETDATE()
-        WHERE TestRequestID = @testRequestId
-      `)
-    return result.recordset
-  }
+  //   const result = await connection
+  //     .request()
+  //     .input('id', testResultId)
+  //     .query('SELECT * From TestResults WHERE TestResultID = @id')
+  //   const updatereq = await connection
+  //     .request()
+  //     .input('testRequestId', result.recordset[0].TestRequestID)
+  //     .input('status', 'Completed').query(`
+  //       UPDATE TestRequests 
+  //       SET Status = @status,
+  //           UpdatedAt = GETDATE()
+  //       WHERE TestRequestID = @testRequestId
+  //     `)
+  //   return result.recordset
+  // }
 }
 
 export const testRequestService = new TestRequestService()

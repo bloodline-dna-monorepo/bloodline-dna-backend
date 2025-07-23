@@ -46,16 +46,6 @@ router.post(
 
 router.get('/viewCreateTestResult', authenticate, authorize(['Manager']), testRequestController.viewCreateTestResult)
 
-router.put(
-  '/:testResultId/verifyTestResult',
-  authenticate,
-  authorize(['Manager']),
-  testRequestController.verifyTestResult
-)
-
 router.get('/:testRequestId/results', authenticate, testRequestController.getTestResults)
-
-// Check duplicate ID number
-router.get("/check-duplicate-id/:idNumber", authenticate, testRequestController.checkDuplicateIdNumber)
 
 export { router as testRequestRoutes }

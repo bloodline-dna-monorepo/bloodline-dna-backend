@@ -115,17 +115,7 @@ class TestRequestController {
     res.status(200).json({ message: MESSAGES.TEST_REQUEST.TEST_REQUEST_COMPLETED, result })
     return
   })
-  checkDuplicateIdNumber = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-    const { idNumber } = req.params
 
-    try {
-      const exists = await testRequestService.checkDuplicateIdNumber(idNumber)
-      res.status(200).json({ exists })
-    } catch (error) {
-      console.error('Error checking duplicate ID:', error)
-      res.status(500).json({ message: 'Error checking duplicate ID number' })
-    }
-  })
   submitSampleInfo = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { testRequestId } = req.params
     const userId = req.user?.accountId
@@ -611,26 +601,26 @@ class TestRequestController {
     }
   })
 
-  verifyTestResult = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-    const testResultId = req.params.testResultId
-    const user = req.user
-    if (!testResultId) {
-      res.status(400).json({ message: 'Missing test Result' })
-    }
-    try {
-      const result = await testRequestService.VerifytestResultByManager(Number.parseInt(testResultId), user?.accountId)
-      res.status(200).json({
-        message: MESSAGES.TEST_REQUEST.TEST_RESULT_CONFIRM,
-        data: result
-      })
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(500).json({ message: `Error entering test result: ${error.message}` })
-      } else {
-        res.status(500).json({ message: 'An unknown error occurred' })
-      }
-    }
-  })
+  // verifyTestResult = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  //   const testResultId = req.params.testResultId
+  //   const user = req.user
+  //   if (!testResultId) {
+  //     res.status(400).json({ message: 'Missing test Result' })
+  //   }
+  //   try {
+  //     const result = await testRequestService.VerifytestResultByManager(Number.parseInt(testResultId), user?.accountId)
+  //     res.status(200).json({
+  //       message: MESSAGES.TEST_REQUEST.TEST_RESULT_CONFIRM,
+  //       data: result
+  //     })
+  //   } catch (error: unknown) {
+  //     if (error instanceof Error) {
+  //       res.status(500).json({ message: `Error entering test result: ${error.message}` })
+  //     } else {
+  //       res.status(500).json({ message: 'An unknown error occurred' })
+  //     }
+  //   }
+  // })
 
   getTestRequestByStaff = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     const userid = req.user?.accountId
