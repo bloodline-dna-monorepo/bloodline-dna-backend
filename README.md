@@ -17,7 +17,7 @@ A comprehensive DNA testing service backend built with Node.js, Express, and Typ
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Language**: TypeScript
-- **Database**: MySQL
+- **Database**: SQLServer
 - **Authentication**: JWT (JSON Web Tokens)
 - **Payment**: VNPay
 - **Email**: Nodemailer
@@ -45,7 +45,7 @@ src/
 ### Prerequisites
 
 - Node.js (v14 or higher)
-- MySQL database
+- SQLServer database
 - npm or yarn package manager
 
 ### Installation
@@ -99,15 +99,8 @@ PORT=5000
 NODE_ENV=development
 \`\`\`
 
-4. Set up the database:
-   \`\`\`bash
 
-# Import the database schema
-
-mysql -u your_username -p bloodline_dna < Blooddatabase.sql
-\`\`\`
-
-5. Start the development server:
+4. Start the development server:
    \`\`\`bash
    npm run dev
    \`\`\`
