@@ -229,18 +229,18 @@ export const PasswordChange = async (userId: number, password: string, newPasswo
   // Kiểm tra mật khẩu cũ có chính xác không
   const match = await bcrypt.compare(password, user.PasswordHash) // Sử dụng await để chờ kết quả
   if (!match) {
-    throw new Error('Old password is wrong')
+    throw new Error('Mật khẩu cũ bị sai')
   }
 
   // Kiểm tra mật khẩu mới có hợp lệ không
   const passwordregex = /^.{6,12}$/
   if (!passwordregex.test(newPassword)) {
-    throw new Error('New password must be between 6 and 12 characters')
+    throw new Error('Mật khẩu mới phải từ 6 - 12 ký tự')
   }
 
   // Kiểm tra mật khẩu mới không trùng với mật khẩu cũ
   if (password === newPassword) {
-    throw new Error('New password cannot be the same as the old password')
+    throw new Error('Mật khẩu mới bị trùng với mật khẩu cũ')
   }
 
   // Mã hóa mật khẩu mới

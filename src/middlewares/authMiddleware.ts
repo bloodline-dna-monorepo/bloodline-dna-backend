@@ -27,7 +27,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   const authHeader = req.headers['authorization']
 
   if (!authHeader) {
-    res.status(401).json({ message: 'Authorization header is missing ' })
+    res.status(401).json({ message: 'Authorization header is missing' })
     return
   }
 

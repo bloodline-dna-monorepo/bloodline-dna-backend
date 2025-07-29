@@ -265,7 +265,8 @@ class StaffService {
 
     const requestData = requestResult.recordset[0]
     const staffdata = await connection.request().input('testRequestId', testRequestId)
-      .query(`SELECT u.FullName,u.SignatureImage FROM dbo.TestRequests t JOIN dbo.UserProfiles u ON t.AssignedTo = u.AccountID WHERE TestRequestID = @testRequestId
+      .query(`SELECT u.FullName,u.SignatureImage FROM dbo.TestRequests t JOIN dbo.UserProfiles u ON t.AssignedTo = u.AccountID
+         WHERE TestRequestID = @testRequestId
 `)
     const cus = await connection
       .request()
@@ -433,7 +434,7 @@ class StaffService {
         VALUES (@testRequestId, @result, @enterBy, GETDATE(), 'Pending')
       `)
     // await connection.request().input('testRequestId', testRequestId).query(`
-    //     UPDATE TestRequests 
+    //     UPDATE TestRequests
     //     SET Status = 'Completed'
     //     WHERE TestRequestID = @testRequestId
     //   `)
