@@ -21,7 +21,8 @@ router.get('/requests/:requestId/detail', staffController.getRequestFullDetail)
 router.put('/requests/:requestId/confirm', staffController.confirmRequest)
 router.put('/requests/:requestId/status', staffController.updateRequestStatus)
 router.put('/requests/:requestId/confirm-sample', staffController.confirmSample)
-
+router.get("/results/verified", staffController.getVerifiedResults)
+router.get("/results/:resultId/detail", staffController.getVerifiedResultDetail)
 // Test result
 router.post('/requests/:requestId/result', staffController.createTestResult)
 

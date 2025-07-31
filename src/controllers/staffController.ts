@@ -144,6 +144,31 @@ class StaffController {
       message: 'Test result created successfully'
     })
   })
+  getVerifiedResults = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    const staffId = req.user?.accountId
+
+    if (!staffId) {
+      res.status(401).json({ message: MESSAGES.ERROR.UNAUTHORIZED })
+      return
+    }
+
+    const results = await staffService.getVerifiedResults(staffId)
+
+    res.status(200).json({
+      message: "Verified results retrieved successfully",
+      data: results,
+    })
+  })
+
+  getVerifiedResultDetail = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { resultId } = req.params
+    const result = await staffService.getVerifiedResultDetail(Number.parseInt(resultId))
+
+    res.status(200).json({
+      message: "Verified result detail retrieved successfully",
+      data: result,
+    })
+  })
 }
 
 export const staffController = new StaffController()

@@ -1,3 +1,4 @@
+import { VerifiedResult, VerifiedResultDetail } from '@/types/type'
 import { getDbPool } from '../config/database'
 
 interface StaffDashboardStats {
@@ -439,6 +440,90 @@ class StaffService {
     //     WHERE TestRequestID = @testRequestId
     //   `)
     // Update test request status to Pending Review (waiting for manager approval)
+  }
+  async getVerifiedResults(staffId: number): Promise<VerifiedResult[]> {
+    const connection = await getDbPool()
+
+    const result = await connection.request().input('staffId', staffId).query(`
+    SELECT 
+      tr_result.TestResultID,
+      tr_result.TestRequestID,
+      up.FullName as CustomerName,
+      a.Email as CustomerEmail,
+      up.PhoneNumber as CustomerPhone,
+      s.ServiceName,
+      s.ServiceType,
+      s.SampleCount,
+      tr_result.Result,
+      staff.FullName as StaffName,
+      tr_result.ConfirmDate as VerifiedDate,
+      tr_result.EnterDate,
+      th.KitID,
+      tr.CollectionMethod
+    FROM TestResults tr_result
+    INNER JOIN TestRequests tr ON tr_result.TestRequestID = tr.TestRequestID
+    INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+    INNER JOIN Accounts a ON tr.AccountID = a.AccountID
+    LEFT JOIN UserProfiles up ON tr.AccountID = up.AccountID
+    LEFT JOIN UserProfiles staff ON tr_result.EnterBy = staff.AccountID
+    LEFT JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID
+    WHERE tr_result.Status = 'Verified' 
+      AND tr_result.EnterBy = @staffId
+    ORDER BY tr_result.ConfirmDate DESC
+  `)
+
+    return result.recordset
+  }
+
+  async getVerifiedResultDetail(resultId: number): Promise<VerifiedResultDetail> {
+    const connection = await getDbPool()
+
+    const result = await connection.request().input('resultId', resultId).query(`
+    SELECT 
+      tr_result.TestResultID,
+      tr_result.TestRequestID,
+      up.FullName as CustomerName,
+      a.Email as CustomerEmail,
+      up.PhoneNumber as CustomerPhone,
+      up.Address as CustomerAddress,
+      s.ServiceName,
+      s.ServiceType,
+      s.SampleCount,
+      tr_result.Result,
+      staff.FullName as StaffName,
+      tr_result.ConfirmDate as VerifiedDate,
+   
+      tr_result.EnterDate,
+      manager.FullName as ManagerName,
+      th.KitID,
+      tr.CollectionMethod,
+      tr.CreatedAt as RegistrationDate,
+      ISNULL(
+        STUFF((
+          SELECT CHAR(10) + sc.TesterName + ' (' + sc.Relationship + ') - ' + sc.SampleType
+          FROM SampleCategories sc 
+          WHERE sc.TestRequestID = tr.TestRequestID
+          FOR XML PATH('')
+        ), 1, 1, ''),
+        'Chưa có thông tin mẫu'
+      ) as TestSubjects,
+      tr.Appointment as SampleDate
+    FROM TestResults tr_result
+    INNER JOIN TestRequests tr ON tr_result.TestRequestID = tr.TestRequestID
+    INNER JOIN Services s ON tr.ServiceID = s.ServiceID
+    INNER JOIN Accounts a ON tr.AccountID = a.AccountID
+    LEFT JOIN UserProfiles up ON tr.AccountID = up.AccountID
+    LEFT JOIN UserProfiles staff ON tr_result.EnterBy = staff.AccountID
+    LEFT JOIN UserProfiles manager ON tr_result.ConfirmBy = manager.AccountID
+    LEFT JOIN TestAtHome th ON tr.TestRequestID = th.TestRequestID
+    WHERE tr_result.TestResultID = @resultId
+  `)
+
+    if (result.recordset.length === 0) {
+      throw new Error('Verified result not found')
+    }
+
+    return result.recordset[0]
   }
 }
 

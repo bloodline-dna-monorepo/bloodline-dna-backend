@@ -304,7 +304,33 @@ export interface TestProcess {
   KitID?: string
 }
 
+
 export type PasswordActionResult = {
   success: boolean
   message: string
+}
+interface VerifiedResult {
+  TestResultID: number
+  TestRequestID: number
+  CustomerName: string
+  CustomerEmail: string
+  CustomerPhone: string
+  ServiceName: string
+  ServiceType: string
+  SampleCount: number
+  Result: string
+  StaffName: string
+  VerifiedDate: string
+  CreatedAt: string
+  KitID: string | null
+  CollectionMethod: string
+}
+
+interface VerifiedResultDetail extends VerifiedResult {
+  CustomerAddress: string
+  TestSubjects: string
+  SampleDate: string
+  EnterDate: string
+  ManagerName: string
+  RegistrationDate: string
 }
